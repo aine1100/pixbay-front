@@ -229,7 +229,7 @@ export default function MyBookingsPage() {
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900">No bookings found</h3>
                             <p className="text-slate-500 text-sm max-w-xs mx-auto">
-                                We couldn't find any bookings matching your current filters or search query.
+                                We couldn&apos;t find any bookings matching your current filters or search query.
                             </p>
                             {(activeTab !== "All" || searchQuery) && (
                                 <button

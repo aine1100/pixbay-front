@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const CREATORS = [
     { id: 1, name: "Chris Musa", role: "Photographer", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150&h=150&auto=format&fit=crop" },
@@ -38,7 +38,7 @@ export function TrendingCreators() {
                             <p className="text-[10px] font-medium text-primary uppercase tracking-tighter">{creator.role}</p>
                         </div>
                         <div className="w-8 h-8 flex items-center justify-center bg-white border border-slate-100 rounded-lg text-slate-700 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
-                             <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-4 h-4" />
                         </div>
                     </div>
                 ))}

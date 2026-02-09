@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -8,37 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
+import Link from "next/link";
+import { Loading } from "@/components/ui/loading";
 import { RoleDropdown } from "./RoleDropdown";
-import { z } from "zod";
+import { registerSchema, RegisterFormData } from "../schemas/register.schema";
+import { authService } from "../services/auth.service";
+import { toast } from "react-hot-toast";
 
-// Schema for registration
-const registerSchema = z.object({
-    role: z.enum(["Client", "Creator", "Admin"], {
-        error: "Please select a role",
-    }),
-    firstName: z.string().min(2, "First name is required"),
-    lastName: z.string().min(2, "Last name is required"),
-    email: z.string().email("Please enter a valid email"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(8, "Please confirm your password"),
-    agreeTerms: z.boolean().refine((val) => val === true, "You must agree to the terms"),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-});
 
-type RegisterFormData = z.infer<typeof registerSchema>;
-
-// Avatar URLs for trust section
-const avatars = [
-    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop&crop=face",
-];
 
 export function RegisterForm() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const {
         register,
@@ -55,8 +40,22 @@ export function RegisterForm() {
 
     const selectedRole = watch("role");
 
-    const onSubmit = (data: RegisterFormData) => {
-        console.log("Register:", data);
+    const onSubmit = async (data: RegisterFormData) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await authService.register(data);
+            toast.success("Registration successful!");
+            console.log("Register Success:", response);
+            // Redirect or show success (e.g., to OTP verification)
+            router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to register";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -198,17 +197,25 @@ export function RegisterForm() {
                         {...register("agreeTerms")}
                     />
                     <label htmlFor="agreeTerms" className="text-[13px] text-muted-foreground cursor-pointer leading-tight">
-                        I agree to the <a href="/terms" className="text-slate-900 font-semibold hover:underline">Terms</a> & <a href="/privacy" className="text-slate-900 font-semibold hover:underline">Privacy Policy</a>
+                        I agree to the <Link href="/terms" className="text-slate-900 font-semibold hover:underline">Terms</Link> & <Link href="/privacy" className="text-slate-900 font-semibold hover:underline">Privacy Policy</Link>
                     </label>
                 </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100">
+                    {error}
+                </div>
+            )}
+
             {/* Submit Button */}
             <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-4 transition-all"
             >
-                Create Account
+                {isLoading ? <Loading size="sm" /> : "Create Account"}
             </Button>
 
             {/* Divider */}
@@ -221,11 +228,14 @@ export function RegisterForm() {
                 </div>
             </div>
 
-            {/* Social Button */}
             <div className="w-full">
                 <Button
                     type="button"
                     variant="outline"
+                    onClick={() => {
+                        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                        window.location.href = `${API_URL}/auth/google`;
+                    }}
                     className="h-11 w-full rounded-xl border-border bg-slate-50/30 text-slate-600 font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-3 text-sm"
                 >
                     <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={18} height={18} />
@@ -233,12 +243,11 @@ export function RegisterForm() {
                 </Button>
             </div>
 
-            {/* Bottom Link */}
             <p className="text-center text-sm text-muted-foreground mt-5">
                 Already have an account?{" "}
-                <a href="/login" className="text-primary font-semibold hover:underline">
+                <Link href="/login" className="text-primary font-semibold hover:underline">
                     Login
-                </a>
+                </Link>
             </p>
         </form>
     );

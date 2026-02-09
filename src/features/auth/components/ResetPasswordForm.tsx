@@ -8,22 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
-
-const resetPasswordSchema = z.object({
-    password: z.string().min(8, "Password must be at least 8 characters"),
-    confirmPassword: z.string().min(8, "Please confirm your password"),
-}).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match",
-    path: ["confirmPassword"],
-});
-
-type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
+import { useSearchParams } from "next/navigation";
+import { resetPasswordSchema, ResetPasswordFormData } from "../schemas/reset-password.schema";
+import { authService } from "../services/auth.service";
+import { toast } from "react-hot-toast";
+import { Loading } from "@/components/ui/loading";
 
 export function ResetPasswordForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const email = searchParams.get("email");
+    const otp = searchParams.get("otp");
+
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const {
         register,
@@ -33,10 +33,28 @@ export function ResetPasswordForm() {
         resolver: zodResolver(resetPasswordSchema),
     });
 
-    const onSubmit = (data: ResetPasswordFormData) => {
-        console.log("Resetting Password:", data);
-        // Simulate success and redirect to login
-        router.push("/login");
+    const onSubmit = async (data: ResetPasswordFormData) => {
+        if (!email || !otp) {
+            setError("Missing email or OTP. Please start the process again.");
+            return;
+        }
+        setIsLoading(true);
+        setError(null);
+        try {
+            await authService.resetPassword({
+                email,
+                otp,
+                newPassword: data.password,
+            });
+            toast.success("Password reset successful!");
+            router.push("/login?reset=success");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to reset password";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -104,12 +122,20 @@ export function ResetPasswordForm() {
                 </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100">
+                    {error}
+                </div>
+            )}
+
             {/* Submit Button */}
             <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-8 transition-all border-none"
             >
-                Reset Password
+                {isLoading ? <Loading size="sm" /> : "Reset Password"}
             </Button>
         </form>
     );

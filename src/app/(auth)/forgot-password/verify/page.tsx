@@ -2,15 +2,26 @@
 
 import Image from "next/image";
 import { OTPForm } from "@/features/auth/components/OTPForm";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authService } from "@/features/auth/services/auth.service";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
 
 export default function ForgotPasswordVerifyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email");
+  const [error, setError] = useState<string | null>(null);
 
-  const handleVerify = (otp: string) => {
-    console.log("Verifying OTP for password reset:", otp);
-    // Simulate successful verification
-    router.push("/forgot-password/reset");
+  const handleVerify = async (otp: string) => {
+    if (!email) {
+      setError("Email is missing. Please try again.");
+      return;
+    }
+    // For password reset, we might just store the OTP and email for the next step
+    // or verify it now. According to backend, /auth/reset-password takes { email, otp, newPassword }.
+    // So here we just validate the OTP format and proceed to reset page with both email and otp.
+    router.push(`/forgot-password/reset?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
   };
 
   return (
@@ -22,6 +33,8 @@ export default function ForgotPasswordVerifyPage() {
             description="Please enter the 6-digit code sent to your email to reset your password."
             onSubmit={handleVerify}
             onCancel={() => router.push("/forgot-password")}
+            isLoading={false}
+            error={error}
         />
       </div>
 

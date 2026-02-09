@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, User, Camera, ShieldCheck } from "lucide-react";
+import { Check, ChevronDown, User, Camera } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 

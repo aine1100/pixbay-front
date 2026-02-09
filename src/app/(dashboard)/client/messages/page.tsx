@@ -289,7 +289,7 @@ export default function MessagingPage() {
 }
 
 // Add Missing Icons
-function MessageSquare(props: any) {
+function MessageSquare(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg
             {...props}

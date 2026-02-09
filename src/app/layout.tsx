@@ -12,6 +12,8 @@ export const metadata: Metadata = {
   description: "Capture, create, and book the finest creators across Africa.",
 };
 
+import { Toaster } from "react-hot-toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -23,6 +25,7 @@ export default function RootLayout({
         className={`${montserrat.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster position="top-right" />
       </body>
     </html>
   );

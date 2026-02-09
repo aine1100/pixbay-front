@@ -6,16 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 
-const forgotPasswordSchema = z.object({
-    email: z.string().email("Please enter a valid email"),
-});
-
-type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+import { forgotPasswordSchema, ForgotPasswordFormData } from "../schemas/forgot-password.schema";
+import { authService } from "../services/auth.service";
+import { useState } from "react";
+import { toast } from "react-hot-toast";
+import Link from "next/link";
+import { Loading } from "@/components/ui/loading";
 
 export function ForgotPasswordForm() {
     const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
     const {
         register,
         handleSubmit,
@@ -24,10 +27,20 @@ export function ForgotPasswordForm() {
         resolver: zodResolver(forgotPasswordSchema),
     });
 
-    const onSubmit = (data: ForgotPasswordFormData) => {
-        console.log("Forgot Password Request:", data);
-        // Simulate sending OTP and redirecting to verify step
-        router.push("/forgot-password/verify");
+    const onSubmit = async (data: ForgotPasswordFormData) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            await authService.forgotPassword(data.email);
+            toast.success("Password reset email sent!");
+            router.push(`/forgot-password/verify?email=${encodeURIComponent(data.email)}`);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Something went wrong";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -38,7 +51,7 @@ export function ForgotPasswordForm() {
                     Forgot Password?
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                    Don't worry! It happens. Please enter the email address associated with your account.
+                    Don&apos;t worry! It happens. Please enter the email address associated with your account.
                 </p>
             </div>
 
@@ -61,20 +74,27 @@ export function ForgotPasswordForm() {
                 </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100 mt-4">
+                    {error}
+                </div>
+            )}
+
             {/* Submit Button */}
             <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-8 transition-all border-none"
             >
-                Send OTP
+                {isLoading ? <Loading size="sm" /> : "Send OTP"}
             </Button>
 
-            {/* Bottom Link */}
             <p className="text-center text-sm text-muted-foreground mt-8">
                 Remember your password?{" "}
-                <a href="/login" className="text-primary font-semibold hover:underline">
+                <Link href="/login" className="text-primary font-semibold hover:underline">
                     Login
-                </a>
+                </Link>
             </p>
         </form>
     );

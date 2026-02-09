@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -8,17 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Image from "next/image";
-import { z } from "zod";
+import Link from "next/link";
+import { Loading } from "@/components/ui/loading";
 
-const loginSchema = z.object({
-    email: z.string().email("Please enter a valid email"),
-    password: z.string().min(1, "Password is required"),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+import { loginSchema, LoginFormData } from "../schemas/login.schema";
+import { authService } from "../services/auth.service";
+import { toast } from "react-hot-toast";
 
 export function LoginForm() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const {
         register,
@@ -28,8 +30,22 @@ export function LoginForm() {
         resolver: zodResolver(loginSchema),
     });
 
-    const onSubmit = (data: LoginFormData) => {
-        console.log("Login:", data);
+    const onSubmit = async (data: LoginFormData) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await authService.login(data);
+            toast.success("Login successful!");
+            console.log("Login Success:", response);
+            // Redirect or show success
+            router.push("/dashboard");
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to login";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -69,9 +85,9 @@ export function LoginForm() {
                         <Label htmlFor="password" className="text-foreground font-medium text-[13px]">
                             Password
                         </Label>
-                        <a href="/forgot-password" hidden className="text-[12px] font-semibold text-primary hover:underline">
+                        <Link href="/forgot-password"  className="text-[12px] font-semibold text-primary hover:underline">
                             Forgot password?
-                        </a>
+                        </Link>
                     </div>
                     <div className="relative">
                         <Input
@@ -105,18 +121,26 @@ export function LoginForm() {
                             Remember me
                         </label>
                     </div>
-                    <a href="/forgot-password" hidden className="text-[13px] font-semibold text-slate-900 hover:underline">
+                    <Link href="/forgot-password" className="text-[13px] font-semibold text-slate-900 hover:underline">
                         Forgot Password?
-                    </a>
+                    </Link>
                 </div>
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100">
+                    {error}
+                </div>
+            )}
 
             {/* Submit Button */}
             <Button
                 type="submit"
+                disabled={isLoading}
                 className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-6 transition-all"
             >
-                Log In
+                {isLoading ? <Loading size="sm" /> : "Log In"}
             </Button>
 
             {/* Divider */}
@@ -129,11 +153,14 @@ export function LoginForm() {
                 </div>
             </div>
 
-            {/* Social Button */}
             <div className="w-full">
                 <Button
                     type="button"
                     variant="outline"
+                    onClick={() => {
+                        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                        window.location.href = `${API_URL}/auth/google`;
+                    }}
                     className="h-11 w-full rounded-xl border-border bg-slate-50/30 text-slate-600 font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-3 text-sm"
                 >
                     <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={18} height={18} />
@@ -141,12 +168,11 @@ export function LoginForm() {
                 </Button>
             </div>
 
-            {/* Bottom Link */}
             <p className="text-center text-sm text-muted-foreground mt-8">
-                Don't have an account?{" "}
-                <a href="/register" className="text-primary font-semibold hover:underline">
+                Don&apos;t have an account?{" "}
+                <Link href="/register" className="text-primary font-semibold hover:underline">
                     Sign up
-                </a>
+                </Link>
             </p>
         </form>
     );

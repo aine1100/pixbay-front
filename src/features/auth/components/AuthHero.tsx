@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 
 export function AuthHero() {
     return (

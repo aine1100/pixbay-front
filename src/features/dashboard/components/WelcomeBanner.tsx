@@ -8,7 +8,7 @@ interface WelcomeBannerProps {
 }
 
 export function WelcomeBanner({ name }: WelcomeBannerProps) {
-    const router=useRouter()
+    const router = useRouter()
     return (
         <div className="relative w-full h-[220px] rounded-[32px] overflow-hidden bg-primary group border border-primary/10">
             {/* Background Image / Decoration */}
@@ -30,11 +30,11 @@ export function WelcomeBanner({ name }: WelcomeBannerProps) {
                     Good Morning {name}!
                 </h1>
                 <p className="text-white text-base sm:text-md max-w-md font-medium leading-relaxed">
-                    Get ready to embark on a wonderful experience with Africa's best creators.
+                    Get ready to embark on a wonderful experience with Africa&apos;s best creators.
                 </p>
 
                 <div className="mt-6 flex items-center gap-2">
-                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors" onClick={()=>router.push("/creators")}>
+                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors" onClick={() => router.push("/creators")}>
                         View Creators
                     </button>
                 </div>

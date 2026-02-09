@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import NextImage from "next/image";
-import { Star, MapPin, BadgeCheck, Heart, Briefcase } from "lucide-react";
+import { Star, BadgeCheck, Heart, Briefcase } from "lucide-react";
 
 interface CreatorCardProps {
     id: string;

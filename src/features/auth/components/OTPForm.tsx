@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown } from "lucide-react";
-
+import { Loading } from "@/components/ui/loading";
 interface OTPFormProps {
     onSubmit?: (otp: string) => void;
     onCancel?: () => void;
     title?: string;
     description?: string;
+    isLoading?: boolean;
+    error?: string | null;
 }
 
 export function OTPForm({ 
     onSubmit, 
     onCancel, 
     title = "Verify with OTP", 
-    description = "For account security maintenance, please enter the One-Time 6 digits password sent to the phone number or email you registered with."
+    description = "For account security maintenance, please enter the One-Time 6 digits password sent to the phone number or email you registered with.",
+    isLoading = false,
+    error = null,
 }: OTPFormProps) {
     const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -64,6 +67,13 @@ export function OTPForm({
                 </p>
             </div>
 
+            {/* Error Message */}
+            {error && (
+                <div className="mb-6 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100 text-center">
+                    {error}
+                </div>
+            )}
+
             <div className="flex justify-center gap-3 sm:gap-4 mb-10" onPaste={handlePaste}>
                 {otp.map((data, index) => (
                     <input
@@ -74,15 +84,16 @@ export function OTPForm({
                         value={data}
                         onChange={(e) => handleChange(e, index)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
-                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-semibold rounded-xl border border-border bg-input focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                        disabled={isLoading}
+                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-semibold rounded-xl border border-border bg-input focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all disabled:opacity-50"
                     />
                 ))}
             </div>
 
             <div className="text-center mb-12">
                 <p className="text-sm text-muted-foreground font-medium">
-                    Didn't receive the OTP?{" "}
-                    <button className="text-primary font-semibold hover:underline">
+                    Didn&apos;t receive the OTP?{" "}
+                    <button className="text-primary font-semibold hover:underline" disabled={isLoading}>
                         Resend
                     </button>
                 </p>
@@ -91,13 +102,15 @@ export function OTPForm({
             <div className="space-y-3">
                 <Button 
                     onClick={() => onSubmit?.(otp.join(""))}
+                    disabled={isLoading || otp.join("").length < 6}
                     className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base transition-all border-none"
                 >
-                    Submit
+                    {isLoading ? <Loading size="sm" /> : "Submit"}
                 </Button>
                 <Button 
                     variant="outline" 
                     onClick={onCancel}
+                    disabled={isLoading}
                     className="w-full h-11 rounded-xl border-border text-slate-600 font-medium text-base hover:bg-slate-50 transition-all bg-transparent"
                 >
                     Cancel

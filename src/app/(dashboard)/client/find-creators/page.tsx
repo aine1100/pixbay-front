@@ -119,7 +119,7 @@ export default function FindCreatorsPage() {
                                 </div>
                                 <h3 className="text-lg font-semibold text-slate-900 mb-2">No creators found</h3>
                                 <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
-                                    We couldn't find any results matching your current filters. Try adjusting your preferences.
+                                    We couldn&apos;t find any results matching your current filters. Try adjusting your preferences.
                                 </p>
                                 <button 
                                     onClick={() => {

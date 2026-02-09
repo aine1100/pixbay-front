@@ -11,7 +11,6 @@ import {
     ChevronDown,
     Plus,
     Minus,
-    LifeBuoy,
     Send,
     ExternalLink,
     Mail,
@@ -179,7 +178,7 @@ export default function HelpPage() {
                             <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                                 <div className="space-y-1">
                                     <h2 className="text-lg font-semibold text-slate-900">Contact Support</h2>
-                                    <p className="text-[13px] text-slate-500 font-medium">Send us a message and we'll get back to you as soon as possible.</p>
+                                    <p className="text-[13px] text-slate-500 font-medium">Send us a message and we&apos;ll get back to you as soon as possible.</p>
                                 </div>
 
                                 <form className="space-y-6">
