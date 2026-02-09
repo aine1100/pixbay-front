@@ -100,7 +100,7 @@ export default function MyBookingsPage() {
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <div>
-                <h1 className="text-2xl font-bold text-[#111827] tracking-tight">My Bookings</h1>
+                <h1 className="text-2xl font-semibold text-[#111827] tracking-tight">My Bookings</h1>
             </div>
 
             <div className="bg-white rounded-[24px] border border-slate-100 p-8 shadow-none space-y-8">
@@ -156,7 +156,7 @@ export default function MyBookingsPage() {
 
                                     {/* Booking Info */}
                                     <div className="space-y-2">
-                                        <h3 className="text-xl font-bold text-slate-900 tracking-tight">{booking.eventTitle}</h3>
+                                        <h3 className="text-xl font-semibold text-slate-900 tracking-tight">{booking.eventTitle}</h3>
                                         <div className="flex items-center gap-2">
                                             <div className="w-7 h-7 rounded-full overflow-hidden relative ring-1 ring-slate-100">
                                                 <NextImage
@@ -186,7 +186,7 @@ export default function MyBookingsPage() {
 
                                     {/* Price & Action */}
                                     <div className="flex items-center gap-8 relative">
-                                        <span className="text-2xl font-bold text-slate-900 tracking-tight">${booking.price}</span>
+                                        <span className="text-2xl font-semibold text-slate-900 tracking-tight">${booking.price}</span>
                                         <div className="relative">
                                             <button
                                                 onClick={() => setOpenMenuId(openMenuId === booking.id ? null : booking.id)}
@@ -227,14 +227,14 @@ export default function MyBookingsPage() {
                             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-300">
                                 <Calendar className="w-8 h-8" />
                             </div>
-                            <h3 className="text-lg font-bold text-slate-900">No bookings found</h3>
+                            <h3 className="text-lg font-semibold text-slate-900">No bookings found</h3>
                             <p className="text-slate-500 text-sm max-w-xs mx-auto">
                                 We couldn't find any bookings matching your current filters or search query.
                             </p>
                             {(activeTab !== "All" || searchQuery) && (
                                 <button
                                     onClick={() => { setActiveTab("All"); setSearchQuery(""); }}
-                                    className="text-[#FF3B30] font-bold text-sm hover:underline"
+                                    className="text-[#FF3B30] font-semibold text-sm hover:underline"
                                 >
                                     Clear all filters
                                 </button>
@@ -275,7 +275,7 @@ function StatusBadge({ status }: { status: string }) {
 
     return (
         <span className={cn(
-            "px-5 py-1.5 rounded-xl text-[12px] font-bold",
+            "px-5 py-1.5 rounded-xl text-[12px] font-semibold",
             style.bg,
             style.text
         )}>

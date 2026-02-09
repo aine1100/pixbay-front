@@ -56,7 +56,7 @@ export function OTPForm({
         <div className="w-full max-w-md pt-0 sm:pt-4">
 
             <div className="text-center mb-10">
-                <h1 className="text-2xl font-bold text-foreground mb-4">
+                <h1 className="text-2xl font-semibold text-foreground mb-4">
                     {title}
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed px-4">
@@ -74,7 +74,7 @@ export function OTPForm({
                         value={data}
                         onChange={(e) => handleChange(e, index)}
                         onKeyDown={(e) => handleKeyDown(e, index)}
-                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-bold rounded-xl border border-border bg-input focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
+                        className="w-12 h-12 sm:w-14 sm:h-14 text-center text-xl font-semibold rounded-xl border border-border bg-input focus:ring-1 focus:ring-primary focus:border-primary outline-none transition-all"
                     />
                 ))}
             </div>

@@ -63,7 +63,7 @@ export function RegisterForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
             {/* Header */}
             <div className="mb-4">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">
+                <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">
                     Join Pixbay
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -78,9 +78,9 @@ export function RegisterForm() {
                     <Label className="text-foreground font-medium text-[13px]">
                         Select your role
                     </Label>
-                    <RoleDropdown 
-                        value={selectedRole} 
-                        onChange={(val) => setValue("role", val)} 
+                    <RoleDropdown
+                        value={selectedRole}
+                        onChange={(val) => setValue("role", val)}
                     />
                     {errors.role && (
                         <p className="text-[11px] text-red-500 mt-0.5">{errors.role.message}</p>
@@ -198,7 +198,7 @@ export function RegisterForm() {
                         {...register("agreeTerms")}
                     />
                     <label htmlFor="agreeTerms" className="text-[13px] text-muted-foreground cursor-pointer leading-tight">
-                        I agree to the <a href="/terms" className="text-slate-900 font-bold hover:underline">Terms</a> & <a href="/privacy" className="text-slate-900 font-bold hover:underline">Privacy Policy</a>
+                        I agree to the <a href="/terms" className="text-slate-900 font-semibold hover:underline">Terms</a> & <a href="/privacy" className="text-slate-900 font-semibold hover:underline">Privacy Policy</a>
                     </label>
                 </div>
             </div>

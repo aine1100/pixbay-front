@@ -49,7 +49,7 @@ export function CalendarWidget() {
                         </div>
                     ))}
                 </div>
-                <p className="text-[11px] font-bold text-primary">3 New Bookings</p>
+                <p className="text-[11px] font-semibold text-primary">3 New Bookings</p>
             </div>
         </div>
     );

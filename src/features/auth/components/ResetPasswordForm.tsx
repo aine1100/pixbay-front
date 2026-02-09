@@ -43,7 +43,7 @@ export function ResetPasswordForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col w-full max-w-md">
             {/* Header */}
             <div className="mb-8 text-center lg:text-left">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight mb-3">
+                <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-3">
                     Reset Password
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed">

@@ -15,7 +15,7 @@ export function SuccessForm() {
             </div>
 
             <div className="text-center mb-12">
-                <h1 className="text-2xl font-bold text-foreground mb-4">
+                <h1 className="text-2xl font-semibold text-foreground mb-4">
                     Verification Success
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed px-6">

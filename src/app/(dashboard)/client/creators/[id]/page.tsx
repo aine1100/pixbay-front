@@ -193,18 +193,18 @@ export default function CreatorProfilePage() {
                                         <Star className="w-5 h-5 fill-current" />
                                         <Star className="w-5 h-5 text-yellow-500/30 fill-current" />
                                     </div>
-                                    <span className="text-xl font-bold text-slate-900">{CREATOR_DATA.rating}</span>
+                                    <span className="text-xl font-semibold text-slate-900">{CREATOR_DATA.rating}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-700">
                                     <MessageSquare className="w-5 h-5 text-slate-400" />
-                                    <span className="text-xl font-bold">{CREATOR_DATA.reviewsCount}</span>
+                                    <span className="text-xl font-semibold">{CREATOR_DATA.reviewsCount}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* More About Me Section */}
                         <div className="space-y-6 pt-6 border-t border-slate-50">
-                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">More About Me</h3>
+                            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest">More About Me</h3>
 
                             <div className="space-y-3">
                                 <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
@@ -263,7 +263,7 @@ export default function CreatorProfilePage() {
                         </div>
 
                         {/* CTA */}
-                        <button className="w-full h-14 bg-primary text-white rounded-2xl font-bold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none">
+                        <button className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none">
                             Book creator now
                         </button>
                     </div>
@@ -273,7 +273,7 @@ export default function CreatorProfilePage() {
                 <div className="lg:col-span-8 space-y-8">
                     {/* Overview */}
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6">
-                        <h2 className="text-xl font-bold text-slate-900">Overview</h2>
+                        <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
                         <p className="text-slate-600 leading-relaxed font-medium">
                             {CREATOR_DATA.overview}
                         </p>
@@ -282,8 +282,8 @@ export default function CreatorProfilePage() {
                     {/* Portfolio */}
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-slate-900">Portfolio</h2>
-                            <button className="text-sm font-bold text-primary hover:underline">View all work</button>
+                            <h2 className="text-xl font-semibold text-slate-900">Portfolio</h2>
+                            <button className="text-sm font-semibold text-primary hover:underline">View all work</button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -304,7 +304,7 @@ export default function CreatorProfilePage() {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <div className="flex items-center justify-between mb-1">
-                                            <h3 className="text-white font-bold text-lg">{item.title}</h3>
+                                            <h3 className="text-white font-semibold text-lg">{item.title}</h3>
                                             <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full text-white backdrop-blur-sm">
                                                 {item.images.length} images
                                             </span>
@@ -323,10 +323,10 @@ export default function CreatorProfilePage() {
                         <div className="flex items-center gap-4 pb-4 border-b border-slate-50">
                             <div className="flex items-center gap-2">
                                 <Star className="w-6 h-6 fill-yellow-500 text-yellow-500" />
-                                <span className="text-2xl font-bold text-slate-900">{CREATOR_DATA.rating}</span>
+                                <span className="text-2xl font-semibold text-slate-900">{CREATOR_DATA.rating}</span>
                             </div>
                             <span className="text-slate-200">|</span>
-                            <span className="text-xl font-bold text-slate-700">{CREATOR_DATA.reviewsCount} Reviews</span>
+                            <span className="text-xl font-semibold text-slate-700">{CREATOR_DATA.reviewsCount} Reviews</span>
                         </div>
 
                         <div className="space-y-6">
@@ -343,7 +343,7 @@ export default function CreatorProfilePage() {
                                                 />
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-slate-900">{review.user}</h4>
+                                                <h4 className="font-semibold text-slate-900">{review.user}</h4>
                                                 <div className="flex items-center gap-2 mt-0.5">
                                                     <div className="w-4 h-3 relative rounded-sm overflow-hidden border border-slate-200">
                                                         <NextImage
@@ -371,7 +371,7 @@ export default function CreatorProfilePage() {
                         </div>
 
                         <div className="flex justify-center pt-4">
-                            <button className="px-10 h-12 border-2 border-primary/10 text-primary rounded-xl font-bold text-sm hover:bg-primary/5 transition-all outline-none">
+                            <button className="px-10 h-12 border-2 border-primary/10 text-primary rounded-xl font-semibold text-sm hover:bg-primary/5 transition-all outline-none">
                                 Show all Reviews
                             </button>
                         </div>
@@ -388,7 +388,7 @@ export default function CreatorProfilePage() {
                     {/* Header: Title & Close */}
                     <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
                         <div className="flex flex-col">
-                            <h3 className="text-white text-2xl font-bold">{CREATOR_DATA.portfolio[selectedProjectIndex].title}</h3>
+                            <h3 className="text-white text-2xl font-semibold">{CREATOR_DATA.portfolio[selectedProjectIndex].title}</h3>
                             <p className="text-white/50 text-sm font-medium">
                                 Image {currentImageIndex + 1} of {CREATOR_DATA.portfolio[selectedProjectIndex].images.length}
                             </p>

@@ -75,12 +75,12 @@ export function RecentBookings() {
 
                             <div className="text-right">
                                 <span className={cn(
-                                    "inline-block px-2 py-0.5 rounded-lg text-[9px] font-bold mb-2 uppercase tracking-wider",
+                                    "inline-block px-2 py-0.5 rounded-lg text-[9px] font-semibold mb-2 uppercase tracking-wider",
                                     booking.status === "Approved" ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
                                 )}>
                                     {booking.status}
                                 </span>
-                                <p className="text-base font-bold text-slate-900 leading-none">{booking.amount}</p>
+                                <p className="text-base font-semibold text-slate-900 leading-none">{booking.amount}</p>
                             </div>
                         </div>
                     </div>

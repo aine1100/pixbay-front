@@ -73,14 +73,14 @@ export function CreatorCard({
                                 </div>
                             </div>
                         </div>
-                        <span className="text-lg font-bold text-slate-900 ml-1">{rating}</span>
+                        <span className="text-lg font-semibold text-slate-900 ml-1">{rating}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-700">
                         <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
                             <Briefcase className="w-4 h-4" />
                         </div>
-                        <span className="text-sm font-bold">{jobs}</span>
+                        <span className="text-sm font-semibold">{jobs}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-700">
@@ -101,10 +101,10 @@ export function CreatorCard({
                 {/* Description and Action Area - Horizontal Flex */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <p className="text-sm text-slate-700/70 leading-relaxed max-w-md font-medium">
-                        {description}... <button className="text-primary font-bold hover:underline">more</button>
+                        {description}... <button className="text-primary font-semibold hover:underline">more</button>
                     </p>
 
-                    <Link 
+                    <Link
                         href={`/client/creators/${id}`}
                         className="flex-shrink-0 bg-primary rounded-xl px-8 h-11 flex items-center justify-center text-white text-sm font-medium tracking-widest hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
                     >

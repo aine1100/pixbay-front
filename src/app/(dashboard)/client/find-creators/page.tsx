@@ -76,7 +76,7 @@ export default function FindCreatorsPage() {
         <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Page Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Explore creators</h1>
+                <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Explore creators</h1>
             </div>
 
             <div className="flex flex-col xl:flex-row gap-10 h-full">
@@ -117,7 +117,7 @@ export default function FindCreatorsPage() {
                                 <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                      <span className="text-2xl"><Search/></span>
                                 </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">No creators found</h3>
+                                <h3 className="text-lg font-semibold text-slate-900 mb-2">No creators found</h3>
                                 <p className="text-slate-500 font-medium max-w-xs mx-auto mb-8">
                                     We couldn't find any results matching your current filters. Try adjusting your preferences.
                                 </p>
@@ -128,7 +128,7 @@ export default function FindCreatorsPage() {
                                         setEventCategories([]);
                                         setLocations([]);
                                     }}
-                                    className="px-8 h-12 bg-primary text-white rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95"
+                                    className="px-8 h-12 bg-primary text-white rounded-xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95"
                                 >
                                     Clear all filters
                                 </button>

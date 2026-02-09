@@ -49,11 +49,7 @@ export default function DashboardLayout({
                         </button>
 
                         <div className="flex items-center gap-4 w-full">
-                            {/* Filter Dropdown (matching image) */}
-                            <div className="hidden md:flex items-center gap-2 px-4 h-11 bg-slate-50 rounded-full border border-slate-100/50 cursor-pointer hover:bg-slate-100 transition-colors">
-                                <span className="text-sm font-bold text-slate-600">All</span>
-                                <ChevronDown className="w-4 h-4 text-slate-400" />
-                            </div>
+                            
 
                             {/* Search Bar */}
                             <div className="relative max-w-lg w-full">
@@ -97,7 +93,7 @@ export default function DashboardLayout({
                                 />
                             </div>
                             <div className="flex items-center gap-2 cursor-pointer group">
-                                <p className="text-sm font-bold text-slate-900 leading-none">Alena SHIMA</p>
+                                <p className="text-sm font-semibold text-slate-900 leading-none">Alena SHIMA</p>
                                 <ChevronDown className="w-4 h-4 text-slate-900 group-hover:translate-y-0.5 transition-transform" />
                             </div>
                         </div>

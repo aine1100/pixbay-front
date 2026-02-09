@@ -51,7 +51,7 @@ export function RoleSelector({ value, onChange }: RoleSelectorProps) {
             {role.icon}
           </div>
           <span className={cn(
-            "text-sm font-bold tracking-tight",
+            "text-sm font-semibold tracking-tight",
             value === role.id ? "text-primary text-opacity-100" : "text-zinc-500 group-hover:text-zinc-700"
           )}>
             {role.label}

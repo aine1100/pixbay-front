@@ -34,7 +34,7 @@ export function WelcomeBanner({ name }: WelcomeBannerProps) {
                 </p>
 
                 <div className="mt-6 flex items-center gap-2">
-                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors" onClick={()=>router.push("/creators")}>
+                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors" onClick={()=>router.push("/creators")}>
                         View Creators
                     </button>
                 </div>

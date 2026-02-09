@@ -20,7 +20,7 @@ export function StatsCard({ title, value, trend, trendType, description, icon: I
                     <Icon className="w-5 h-5" />
                 </div>
                 <div className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold",
+                    "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold",
                     trendType === "up" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
                 )}>
                     {trendType === "up" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -30,7 +30,7 @@ export function StatsCard({ title, value, trend, trendType, description, icon: I
 
             <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-                <p className="text-2xl font-bold text-slate-700 tracking-tight">{value}</p>
+                <p className="text-2xl font-semibold text-slate-700 tracking-tight">{value}</p>
                 <p className="text-[11px] text-slate-700 font-medium">
                     <span className="text-primary font-semibold">{description}</span> from last week
                 </p>

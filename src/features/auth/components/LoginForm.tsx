@@ -36,7 +36,7 @@ export function LoginForm() {
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
             {/* Header */}
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-foreground tracking-tight mb-2">
+                <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">
                     Welcome Back
                 </h1>
                 <p className="text-muted-foreground text-sm leading-relaxed">
@@ -105,7 +105,7 @@ export function LoginForm() {
                             Remember me
                         </label>
                     </div>
-                    <a href="/forgot-password" hidden className="text-[13px] font-bold text-slate-900 hover:underline">
+                    <a href="/forgot-password" hidden className="text-[13px] font-semibold text-slate-900 hover:underline">
                         Forgot Password?
                     </a>
                 </div>

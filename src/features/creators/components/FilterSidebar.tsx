@@ -42,7 +42,7 @@ export function FilterSidebar({
             {/* Creator Type */}
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                 <div className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-50">
-                    <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">Creator type</span>
+                    <span className="text-sm font-semibold text-slate-900 uppercase tracking-tight">Creator type</span>
                     <ChevronDown className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="px-6 py-6 space-y-4">
@@ -70,7 +70,7 @@ export function FilterSidebar({
             {/* Event Category */}
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                 <div className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-50">
-                    <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">Event category</span>
+                    <span className="text-sm font-semibold text-slate-900 uppercase tracking-tight">Event category</span>
                     <ChevronDown className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="px-6 py-6 space-y-4">
@@ -98,7 +98,7 @@ export function FilterSidebar({
             {/* Location */}
             <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
                 <div className="w-full px-6 py-4 flex items-center justify-between border-b border-slate-50">
-                    <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">Location</span>
+                    <span className="text-sm font-semibold text-slate-900 uppercase tracking-tight">Location</span>
                     <ChevronDown className="w-4 h-4 text-slate-400" />
                 </div>
                 <div className="px-6 py-6 space-y-4 max-h-60 overflow-y-auto custom-scrollbar">
@@ -124,7 +124,7 @@ export function FilterSidebar({
             </div>
 
             {/* Apply Button */}
-            <button className="w-full h-12 bg-primary text-white rounded-xl font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95">
+            <button className="w-full h-12 bg-primary text-white rounded-xl font-semibold text-[11px] uppercase tracking-[0.2em] hover:bg-primary/90 transition-all active:scale-95">
                 Apply Filters
             </button>
         </div>

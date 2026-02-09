@@ -22,7 +22,6 @@ const MENU_ITEMS = [
     { label: "Bookings", icon: Calendar, href: "/client/bookings" },
     { label: "Messages", icon: MessageSquare, href: "/client/messages", badge: "12+" },
     { label: "Payments", icon: Wallet, href: "/client/payments" },
-    { label: "Reviews", icon: Star, href: "/client/reviews" },
 ];
 
 const GENERAL_ITEMS = [
@@ -37,7 +36,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full bg-white">
             {/* Logo */}
             <div className="flex items-center gap-3 px-8 h-20 items-center">
-                <span className="text-xl font-bold text-slate-900">Pixbay</span>
+                <span className="text-xl font-semibold text-slate-900">Pixbay</span>
             </div>
 
             <div className="flex-1 px-4 py-4 space-y-8 overflow-y-auto custom-scrollbar">
@@ -52,7 +51,7 @@ export function Sidebar() {
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "group flex items-center justify-between px-4 h-12 rounded-xl transition-all relative overflow-hidden",
+                                        "group flex items-center justify-between px-4 h-12 rounded-lg transition-all relative overflow-hidden",
                                         isActive
                                             ? "bg-primary text-white"
                                             : "text-slate-900 hover:bg-slate-50"
@@ -64,7 +63,7 @@ export function Sidebar() {
                                     </div>
                                     {item.badge && (
                                         <span className={cn(
-                                            "text-[10px] font-bold px-2 py-0.5 rounded-lg",
+                                            "text-[10px] font-semibold px-2 py-0.5 rounded-lg",
                                             isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
                                         )}>
                                             {item.badge}
@@ -85,7 +84,7 @@ export function Sidebar() {
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "group flex items-center gap-4 px-4 h-12 rounded-xl transition-all relative",
+                                        "group flex items-center gap-4 px-4 h-12 rounded-lg transition-all relative",
                                         isActive
                                             ? "bg-primary text-white"
                                             : "text-slate-900 hover:bg-slate-50"
