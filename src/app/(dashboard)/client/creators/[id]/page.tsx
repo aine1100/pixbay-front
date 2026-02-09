@@ -1,5 +1,5 @@
-"use client";
-
+"use client"
+import { useState, useEffect, useCallback } from "react";
 import NextImage from "next/image";
 import {
     BadgeCheck,
@@ -13,14 +13,16 @@ import {
     DollarSign,
     Briefcase,
     ChevronLeft,
+    ChevronRight,
     Share2,
     Heart,
-    Calendar
+    Calendar,
+    X
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-// Mock data (matches the Yvan SHEMA example in the image)
+// Mock data (expanded for multi-image gallery)
 const CREATOR_DATA = {
     id: "1",
     name: "Yvan SHEMA",
@@ -48,13 +50,31 @@ const CREATOR_DATA = {
             id: "p1",
             title: "Tina & Cedro's wedding",
             description: "I captured the most breathtaking moments for this wonderful events for the two love birds.",
-            image: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
+            images: [
+                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800",
+                "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800",
+                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
+                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
+            ]
         },
         {
             id: "p2",
             title: "Her Future Summit",
             description: "Captured the most rememberable moments from Her Future Summit 2025",
-            image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800"
+            images: [
+                "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800",
+                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
+                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
+            ]
+        },
+        {
+            id: "p3",
+            title: "Product Launch",
+            description: "Professional product photography for a high-end tech startup.",
+            images: [
+                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
+                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
+            ]
         }
     ],
     reviews: [
@@ -74,14 +94,40 @@ const CREATOR_DATA = {
             date: "2 months ago",
             rating: 4,
             comment: "This was one of the smoothest photography experiences we've had. He paid close attention to detail, guided us naturally during the shoot, and delivered clean, professional images that truly represented us. The results were outstanding, and we've already recommended them to colleagues and friends.",
-            avatar: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?q=80&w=150"
+            avatar: "https://images.unsplash.com/photo-1531123897727-8f129c16fd3c?q=80&w=150"
         }
     ]
 };
 
 export default function CreatorProfilePage() {
     const params = useParams();
-    // In a real app, we'd fetch the creator by ID. For now, we'll use our mock data.
+    const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    const nextImage = useCallback(() => {
+        if (selectedProjectIndex !== null) {
+            const project = CREATOR_DATA.portfolio[selectedProjectIndex];
+            setCurrentImageIndex((currentImageIndex + 1) % project.images.length);
+        }
+    }, [selectedProjectIndex, currentImageIndex]);
+
+    const prevImage = useCallback(() => {
+        if (selectedProjectIndex !== null) {
+            const project = CREATOR_DATA.portfolio[selectedProjectIndex];
+            setCurrentImageIndex((currentImageIndex - 1 + project.images.length) % project.images.length);
+        }
+    }, [selectedProjectIndex, currentImageIndex]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (selectedProjectIndex === null) return;
+            if (e.key === "Escape") setSelectedProjectIndex(null);
+            if (e.key === "ArrowRight") nextImage();
+            if (e.key === "ArrowLeft") prevImage();
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [selectedProjectIndex, nextImage, prevImage]);
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -241,16 +287,28 @@ export default function CreatorProfilePage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {CREATOR_DATA.portfolio.map((item) => (
-                                <div key={item.id} className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20">
+                            {CREATOR_DATA.portfolio.map((item, index) => (
+                                <div 
+                                    key={item.id} 
+                                    onClick={() => {
+                                        setSelectedProjectIndex(index);
+                                        setCurrentImageIndex(0);
+                                    }}
+                                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
+                                >
                                     <NextImage
-                                        src={item.image}
+                                        src={item.images[0]}
                                         alt={item.title}
                                         fill
                                         className="object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <h3 className="text-white font-bold text-lg mb-1">{item.title}</h3>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <h3 className="text-white font-bold text-lg">{item.title}</h3>
+                                            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full text-white backdrop-blur-sm">
+                                                {item.images.length} images
+                                            </span>
+                                        </div>
                                         <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
                                             {item.description}
                                         </p>
@@ -320,6 +378,98 @@ export default function CreatorProfilePage() {
                     </section>
                 </div>
             </div>
+
+            {/* Portfolio Project Gallery Lightbox */}
+            {selectedProjectIndex !== null && (
+                <div 
+                    className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300"
+                    onClick={() => setSelectedProjectIndex(null)}
+                >
+                    {/* Header: Title & Close */}
+                    <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
+                        <div className="flex flex-col">
+                            <h3 className="text-white text-2xl font-bold">{CREATOR_DATA.portfolio[selectedProjectIndex].title}</h3>
+                            <p className="text-white/50 text-sm font-medium">
+                                Image {currentImageIndex + 1} of {CREATOR_DATA.portfolio[selectedProjectIndex].images.length}
+                            </p>
+                        </div>
+                        <button 
+                            className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
+                            onClick={(e) => { e.stopPropagation(); setSelectedProjectIndex(null); }}
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* Main Carousel Area */}
+                    <div className="relative w-full h-[60vh] flex items-center justify-center gap-8 px-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Navigation Arrows */}
+                        <button 
+                            className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                            onClick={prevImage}
+                        >
+                            <ChevronLeft className="w-8 h-8" />
+                        </button>
+
+                        <button 
+                            className="absolute right-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                            onClick={nextImage}
+                        >
+                            <ChevronRight className="w-8 h-8" />
+                        </button>
+
+                        {/* Neighbor Hint: Previous */}
+                        <div className="hidden lg:block w-[15%] h-[70%] opacity-30 grayscale blur-[2px] rounded-2xl overflow-hidden transition-all duration-500 scale-90">
+                             <NextImage
+                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[(currentImageIndex - 1 + CREATOR_DATA.portfolio[selectedProjectIndex].images.length) % CREATOR_DATA.portfolio[selectedProjectIndex].images.length]}
+                                alt="Previous"
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+
+                        {/* Active Image */}
+                        <div className="relative w-full lg:w-[60%] h-full rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
+                            <NextImage
+                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[currentImageIndex]}
+                                alt={CREATOR_DATA.portfolio[selectedProjectIndex].title}
+                                fill
+                                className="object-cover"
+                                priority
+                            />
+                        </div>
+
+                        {/* Neighbor Hint: Next */}
+                        <div className="hidden lg:block w-[15%] h-[70%] opacity-30 grayscale blur-[2px] rounded-2xl overflow-hidden transition-all duration-500 scale-90">
+                             <NextImage
+                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[(currentImageIndex + 1) % CREATOR_DATA.portfolio[selectedProjectIndex].images.length]}
+                                alt="Next"
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Footer Info & Thumbnails */}
+                    <div className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-8 px-8" onClick={(e) => e.stopPropagation()}>
+                        <div className="max-w-3xl text-center">
+                            <p className="text-white/80 text-lg leading-relaxed font-medium line-clamp-2">
+                                {CREATOR_DATA.portfolio[selectedProjectIndex].description}
+                            </p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            {CREATOR_DATA.portfolio[selectedProjectIndex].images.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentImageIndex(index)}
+                                    className={`transition-all duration-500 rounded-full ${index === currentImageIndex ? "w-10 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

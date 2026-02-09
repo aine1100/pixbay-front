@@ -44,7 +44,9 @@ export function Sidebar() {
                 <div>
                     <nav className="space-y-1">
                         {MENU_ITEMS.map((item) => {
-                            const isActive = pathname === item.href;
+                            const isActive = pathname === item.href ||
+                                (item.href === "/client/find-creators" && pathname.startsWith("/client/creators")) ||
+                                (item.href === "/client/bookings" && pathname.startsWith("/client/bookings/"));
                             return (
                                 <Link
                                     key={item.href}
