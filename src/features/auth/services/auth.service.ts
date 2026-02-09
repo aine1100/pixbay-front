@@ -8,9 +8,10 @@ export const authService = {
     },
 
     async register(data: RegisterFormData) {
-        // Map frontend role to backend role
+        // Map frontend role to backend role (Prisma enum is uppercase)
+        const { confirmPassword: _, agreeTerms: __, ...submitData } = data;
         const backendData = {
-            ...data,
+            ...submitData,
             role: data.role.toUpperCase(),
         };
         return api.post("/auth/register", backendData);

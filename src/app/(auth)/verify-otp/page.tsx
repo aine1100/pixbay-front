@@ -3,10 +3,11 @@ import Image from "next/image";
 import { OTPForm } from "@/features/auth/components/OTPForm";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService } from "@/features/auth/services/auth.service";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { toast } from "react-hot-toast";
+import { Loading } from "@/components/ui/loading";
 
-export default function VerifyOTPPage() {
+function VerifyOTPContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const email = searchParams.get("email");
@@ -35,7 +36,6 @@ export default function VerifyOTPPage() {
 
     return (
         <div className="flex min-h-screen w-full font-sans bg-white overflow-hidden">
-            {/* Left Side: Form Content */}
             <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12">
                 <OTPForm
                     onSubmit={handleVerify}
@@ -45,9 +45,7 @@ export default function VerifyOTPPage() {
                 />
             </div>
 
-            {/* Right Side: Sticky Illustration with Text */}
             <div className="hidden lg:block sticky top-0 h-screen w-1/2 overflow-hidden bg-black">
-                {/* Hero image with dark overlay for text readability */}
                 <div className="relative w-full h-full">
                     <Image
                         src="/hero.png"
@@ -57,10 +55,16 @@ export default function VerifyOTPPage() {
                         priority
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-
-
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function VerifyOTPPage() {
+    return (
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loading size="lg" /></div>}>
+            <VerifyOTPContent />
+        </Suspense>
     );
 }

@@ -1,12 +1,16 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import { ResetPasswordForm } from "@/features/auth/components/ResetPasswordForm";
+import { Loading } from "@/components/ui/loading";
 
 export default function ResetPasswordPage() {
   return (
     <div className="flex min-h-screen w-full font-sans bg-white overflow-hidden">
       {/* Left Side: Form Content */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12">
-        <ResetPasswordForm />
+        <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loading size="lg" /></div>}>
+          <ResetPasswordForm />
+        </Suspense>
       </div>
 
       {/* Right Side: Sticky Illustration */}

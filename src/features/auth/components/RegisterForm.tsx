@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +25,10 @@ export function RegisterForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    useEffect(() => {
+        console.log("RegisterForm Mounted");
+    }, []);
+
     const {
         register,
         handleSubmit,
@@ -39,8 +43,10 @@ export function RegisterForm() {
     });
 
     const selectedRole = watch("role");
+    console.log("RegisterForm Render - selectedRole:", selectedRole);
 
     const onSubmit = async (data: RegisterFormData) => {
+        console.log("Submitting Register Form:", data);
         setIsLoading(true);
         setError(null);
         try {
@@ -58,8 +64,16 @@ export function RegisterForm() {
         }
     };
 
+    const onError = (errors: any) => {
+        console.log("Register Validation Errors:", errors);
+        const firstError = Object.values(errors)[0] as any;
+        if (firstError?.message) {
+            toast.error(firstError.message);
+        }
+    };
+
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col h-full">
+        <form onSubmit={handleSubmit(onSubmit, onError)} className="flex flex-col h-full">
             {/* Header */}
             <div className="mb-4">
                 <h1 className="text-3xl font-semibold text-foreground tracking-tight mb-2">
@@ -189,16 +203,21 @@ export function RegisterForm() {
                 </div>
 
                 {/* Terms Checkbox */}
-                <div className="flex items-start space-x-2 py-1">
-                    <input
-                        type="checkbox"
-                        id="agreeTerms"
-                        className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-ring/20 cursor-pointer"
-                        {...register("agreeTerms")}
-                    />
-                    <label htmlFor="agreeTerms" className="text-[13px] text-muted-foreground cursor-pointer leading-tight">
-                        I agree to the <Link href="/terms" className="text-slate-900 font-semibold hover:underline">Terms</Link> & <Link href="/privacy" className="text-slate-900 font-semibold hover:underline">Privacy Policy</Link>
-                    </label>
+                <div className="space-y-1">
+                    <div className="flex items-start space-x-2 py-1">
+                        <input
+                            type="checkbox"
+                            id="agreeTerms"
+                            className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-ring/20 cursor-pointer"
+                            {...register("agreeTerms")}
+                        />
+                        <label htmlFor="agreeTerms" className="text-[13px] text-muted-foreground cursor-pointer leading-tight">
+                            I agree to the <Link href="/terms" className="text-slate-900 font-semibold hover:underline">Terms</Link> & <Link href="/privacy" className="text-slate-900 font-semibold hover:underline">Privacy Policy</Link>
+                        </label>
+                    </div>
+                    {errors.agreeTerms && (
+                        <p className="text-[11px] text-red-500">{errors.agreeTerms.message}</p>
+                    )}
                 </div>
             </div>
 
@@ -209,10 +228,10 @@ export function RegisterForm() {
                 </div>
             )}
 
-            {/* Submit Button */}
             <Button
                 type="submit"
                 disabled={isLoading}
+                onClick={() => console.log("Create Account button clicked manually")}
                 className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base mt-4 transition-all"
             >
                 {isLoading ? <Loading size="sm" /> : "Create Account"}
