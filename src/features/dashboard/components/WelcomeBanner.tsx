@@ -1,12 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface WelcomeBannerProps {
     name: string;
 }
 
 export function WelcomeBanner({ name }: WelcomeBannerProps) {
+    const router=useRouter()
     return (
         <div className="relative w-full h-[220px] rounded-[32px] overflow-hidden bg-primary group border border-primary/10">
             {/* Background Image / Decoration */}
@@ -24,16 +26,16 @@ export function WelcomeBanner({ name }: WelcomeBannerProps) {
 
             {/* Content */}
             <div className="relative z-20 h-full flex flex-col justify-center px-8 sm:px-12 text-white">
-                <h1 className="text-3xl sm:text-4xl font-semibold mb-3 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-semibold mb-3 tracking-tight">
                     Good Morning {name}!
                 </h1>
-                <p className="text-white text-base sm:text-lg max-w-md font-medium leading-relaxed">
+                <p className="text-white text-base sm:text-md max-w-md font-medium leading-relaxed">
                     Get ready to embark on a wonderful experience with Africa's best creators.
                 </p>
 
                 <div className="mt-6 flex items-center gap-2">
-                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
-                        View Analytics
+                    <button className="px-6 h-11 bg-white text-primary rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors" onClick={()=>router.push("/creators")}>
+                        View Creators
                     </button>
                 </div>
             </div>

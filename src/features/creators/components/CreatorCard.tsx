@@ -1,86 +1,115 @@
 "use client";
 
-import Image from "next/image";
-import { Star, MapPin, ArrowUpRight, Calendar } from "lucide-react";
+import Link from "next/link";
+import NextImage from "next/image";
+import { Star, MapPin, BadgeCheck, Heart, Briefcase } from "lucide-react";
 
 interface CreatorCardProps {
+    id: string;
     name: string;
     role: string;
+    specialty?: string;
     rating: number;
     reviews: number;
+    jobs: number;
     location: string;
-    price: string;
+    description: string;
     avatar: string;
 }
 
-export function CreatorCard({ name, role, rating, reviews, location, price, avatar }: CreatorCardProps) {
+export function CreatorCard({
+    id,
+    name,
+    role,
+    specialty,
+    rating,
+    reviews,
+    jobs,
+    location,
+    description,
+    avatar
+}: CreatorCardProps) {
     return (
-        <div className="bg-white rounded-[40px] border border-slate-100 p-2 group transition-all">
-            {/* Image Header */}
-            <div className="relative h-72 w-full rounded-[32px] overflow-hidden bg-slate-100">
-                <Image
+        <div className="bg-white rounded-[32px] border border-slate-100 p-6 group relative hover:border-primary/20 transition-all flex flex-col md:flex-row gap-8">
+            {/* Profile Image - Square */}
+            <div className="w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-100">
+                <NextImage
                     src={avatar}
                     alt={name}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    width={128}
+                    height={128}
+                    className="object-cover w-full h-full"
                 />
-                
-                {/* Floating Tags */}
-                <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                    <div className="bg-white/90 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/20">
-                        <span className="text-[10px] font-semibold text-slate-700 uppercase tracking-widest">{role}</span>
-                    </div>
-                    <div className="bg-primary/90 backdrop-blur-sm px-4 py-1.5 rounded-full flex items-center gap-2 border border-primary/20">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        <span className="text-[10px] font-semibold text-white uppercase tracking-widest">Active</span>
-                    </div>
-                </div>
-
-                {/* Rating Overlay */}
-                <div className="absolute bottom-4 left-4 bg-[#1A1A1A]/80 backdrop-blur-sm px-4 py-2 rounded-2xl flex items-center gap-2 border border-white/10">
-                    <Star className="w-3.5 h-3.5 fill-primary text-primary" />
-                    <span className="text-xs font-bold text-white">{rating}</span>
-                    <div className="w-1 h-1 rounded-full bg-white/20" />
-                    <span className="text-[10px] font-medium text-white/60">{reviews} Verified</span>
-                </div>
             </div>
 
-            {/* Content Body */}
-            <div className="p-6">
-                <div className="space-y-1 mb-6">
-                    <div className="flex items-center gap-2 text-slate-700/50">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-semibold uppercase tracking-widest">Available: Next Week</span>
+            {/* Content Area */}
+            <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between mb-2">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-xl font-semibold text-slate-900">{name}</h3>
+                            <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500/10" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-700 mt-1">
+                            {role} <span className="text-slate-700/60 font-medium">({specialty})</span>
+                        </p>
                     </div>
-                    <h3 className="text-xl font-semibold text-slate-700 tracking-tight group-hover:text-primary transition-colors">{name}</h3>
-                    <div className="flex items-center gap-1.5 text-slate-700/60">
-                        <MapPin className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-medium uppercase tracking-widest">{location}</span>
+                    <button className="text-slate-400 hover:text-primary transition-colors p-2">
+                        <Heart className="w-6 h-6" />
+                    </button>
+                </div>
+
+                {/* Metrics Row */}
+                <div className="flex flex-wrap items-center gap-6 mt-4 mb-6">
+                    <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4].map((i) => (
+                                <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                            ))}
+                            <div className="relative">
+                                <Star className="w-4 h-4 text-yellow-400 fill-yellow-400/20" />
+                                <div className="absolute inset-0 overflow-hidden w-1/2">
+                                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                </div>
+                            </div>
+                        </div>
+                        <span className="text-lg font-bold text-slate-900 ml-1">{rating}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-700">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
+                            <Briefcase className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold">{jobs}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-slate-700">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
+                            <div className="w-5 h-4 relative overflow-hidden rounded-sm">
+                                <NextImage
+                                    src="https://flagcdn.com/w40/rw.png"
+                                    alt="Rwanda"
+                                    width={20}
+                                    height={16}
+                                />
+                            </div>
+                        </div>
+                        <span className="text-sm font-medium">{location}</span>
                     </div>
                 </div>
 
-                {/* Expertise Bar (Inspired by progress bars in image) */}
-                <div className="space-y-2 mb-8">
-                    <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest text-slate-700">
-                        <span>Reputation</span>
-                        <span>{rating * 20}%</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-50">
-                        <div 
-                            className="h-full bg-primary rounded-full transition-all duration-1000 group-hover:opacity-80" 
-                            style={{ width: `${rating * 20}%` }} 
-                        />
-                    </div>
-                </div>
+                {/* Description and Action Area - Horizontal Flex */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <p className="text-sm text-slate-700/70 leading-relaxed max-w-md font-medium">
+                        {description}... <button className="text-primary font-bold hover:underline">more</button>
+                    </p>
 
-                <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                    <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-700 group-hover:bg-[#1A1A1A] group-hover:text-white transition-all transform group-hover:-rotate-12 cursor-pointer">
-                        <ArrowUpRight className="w-5 h-5" />
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[10px] text-slate-700/50 font-bold uppercase tracking-tighter">Budget Starts</p>
-                        <p className="text-2xl font-semibold text-primary mt-0.5">{price}</p>
-                    </div>
+                    <Link 
+                        href={`/client/creators/${id}`}
+                        className="flex-shrink-0 bg-primary rounded-xl px-8 h-11 flex items-center justify-center text-white text-sm font-medium tracking-widest hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        View Portfolio
+                    </Link>
                 </div>
             </div>
         </div>
