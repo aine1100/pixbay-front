@@ -14,7 +14,7 @@ export function Loading({ size = "md", text, fullScreen = false }: LoadingProps)
     };
 
     const containerClasses = fullScreen 
-        ? "fixed inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-50"
+        ? "fixed inset-0 flex flex-col items-center justify-center bg-background/20 backdrop-blur-sm z-50"
         : "flex flex-col items-center justify-center p-4 w-full";
 
     return (
@@ -22,7 +22,7 @@ export function Loading({ size = "md", text, fullScreen = false }: LoadingProps)
             <div className="relative">
                 {/* Outer ring */}
                 <div 
-                    className={`${sizeMap[size]} rounded-full border-primary/20`}
+                    className={`${sizeMap[size]} rounded-full border-slate-100`}
                 />
                 {/* Spinning ring */}
                 <div 

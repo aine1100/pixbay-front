@@ -1,66 +1,11 @@
-"use client";
-
+"use client"
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Search, Calendar, MoreVertical, CheckCircle2, Clock, XCircle, Eye, MessageCircle, X } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-
-// Mock data (matches the image provided)
-const BOOKINGS_DATA = [
-    {
-        id: "b1",
-        eventTitle: "Wedding",
-        creator: {
-            name: "Chris MUSA",
-            avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150",
-            isVerified: false
-        },
-        date: "Aug 12, 2026",
-        status: "Confirmed",
-        price: 250,
-        image: "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=400"
-    },
-    {
-        id: "b2",
-        eventTitle: "Bridal Shower",
-        creator: {
-            name: "Christina Williams",
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150",
-            isVerified: false
-        },
-        date: "May 11, 2026",
-        status: "Pending",
-        price: 100,
-        image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=400"
-    },
-    {
-        id: "b3",
-        eventTitle: "Birthday",
-        creator: {
-            name: "Emmanuel Mensah",
-            avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=150",
-            isVerified: true
-        },
-        date: "April 1, 2026",
-        status: "Completed",
-        price: 80,
-        image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?q=80&w=400"
-    },
-    {
-        id: "b4",
-        eventTitle: "Nathalie's Baby shower",
-        creator: {
-            name: "Diana Ken",
-            avatar: "https://images.unsplash.com/photo-1531123897727-8f129e16fd3c?q=80&w=150",
-            isVerified: false
-        },
-        date: "Feb 12, 2026",
-        status: "Confirmed",
-        price: 70,
-        image: "https://images.unsplash.com/photo-1519703902419-f42c30412230?q=80&w=400"
-    }
-];
+import { useBookings } from "@/features/bookings/hooks/useBookings";
+import { Loading } from "@/components/ui/loading";
 
 const FILTER_TABS = ["All", "Approved", "Cancelled", "Pending"];
 
@@ -69,6 +14,26 @@ export default function MyBookingsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
+
+    const { data: rawBookings, isLoading } = useBookings();
+
+    const bookings = useMemo(() => {
+        return (rawBookings || []).map((b: any) => ({
+            id: b.id,
+            creator: {
+                name: `${b.creator?.user?.firstName || ''} ${b.creator?.user?.lastName || ''}`,
+                avatar: b.creator?.user?.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150",
+                isVerified: b.creator?.verificationStatus === "APPROVED"
+            },
+            date: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            status: b.status.charAt(0) + b.status.slice(1).toLowerCase(),
+            rawStatus: b.status,
+            price: b.pricing?.totalAmount || 0,
+            type: b.category || b.serviceType?.replace('_', ' ') || "Photography",
+            location: b.bookingDetails?.location || b.creator?.baseCity || "Remote",
+            createdAt: b.createdAt
+        }));
+    }, [rawBookings]);
 
     // Close menu on click outside
     useEffect(() => {
@@ -82,10 +47,10 @@ export default function MyBookingsPage() {
     }, []);
 
     const filteredBookings = useMemo(() => {
-        return BOOKINGS_DATA.filter((booking) => {
+        return bookings.filter((booking: any) => {
             const matchesTab =
                 activeTab === "All" ||
-                (activeTab === "Approved" && (booking.status === "Confirmed" || booking.status === "Completed")) ||
+                (activeTab === "Approved" && ["Confirmed", "Completed", "In_progress"].includes(booking.status)) ||
                 (activeTab === "Cancelled" && booking.status === "Cancelled") ||
                 (activeTab === "Pending" && booking.status === "Pending");
 
@@ -95,7 +60,16 @@ export default function MyBookingsPage() {
 
             return matchesTab && matchesSearch;
         });
-    }, [activeTab, searchQuery]);
+    }, [activeTab, searchQuery, bookings]);
+
+    if (isLoading) {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center py-20 bg-white rounded-[24px] border border-slate-100 min-h-[500px]">
+                <Loading size="lg" />
+                <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading your bookings...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -138,7 +112,7 @@ export default function MyBookingsPage() {
                 {/* Bookings List */}
                 <div className="space-y-4">
                     {filteredBookings.length > 0 ? (
-                        filteredBookings.map((booking) => (
+                        filteredBookings.map((booking:any) => (
                             <div
                                 key={booking.id}
                                 className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl border border-slate-100 hover:border-[#FF3B30]/5 transition-all gap-8"
@@ -175,7 +149,14 @@ export default function MyBookingsPage() {
                                         </div>
                                         <div className="flex items-center gap-2 text-slate-400">
                                             <Calendar className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{booking.date}</span>
+                                            {/* Use createdAt from the booking object to format the date */}
+                                            <span className="text-sm font-medium">
+                                                {new Date(booking.createdAt).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -254,6 +235,11 @@ function StatusBadge({ status }: { status: string }) {
             text: "text-[#0369A1]",
             label: "Confirmed"
         },
+        In_progress: {
+            bg: "bg-[#F0FDF4]",
+            text: "text-[#16A34A]",
+            label: "In Progress"
+        },
         Pending: {
             bg: "bg-[#FEF9C3]",
             text: "text-[#A16207]",
@@ -262,12 +248,17 @@ function StatusBadge({ status }: { status: string }) {
         Completed: {
             bg: "bg-[#DCFCE7]",
             text: "text-[#16A34A]",
-            label: "completed"
+            label: "Completed"
         },
         Cancelled: {
             bg: "bg-red-50",
             text: "text-[#FF3B30]",
             label: "Cancelled"
+        },
+        Disputed: {
+            bg: "bg-orange-50",
+            text: "text-orange-600",
+            label: "Disputed"
         }
     };
 
@@ -275,7 +266,7 @@ function StatusBadge({ status }: { status: string }) {
 
     return (
         <span className={cn(
-            "px-5 py-1.5 rounded-xl text-[12px] font-semibold",
+            "px-5 py-1.5 rounded-xl text-[12px] font-semibold whitespace-nowrap",
             style.bg,
             style.text
         )}>

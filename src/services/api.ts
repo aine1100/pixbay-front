@@ -25,6 +25,14 @@ export const api = {
         });
     },
 
+    async patch(endpoint: string, body: unknown, options: CustomRequestInit = {}) {
+        return this.request(endpoint, {
+            ...options,
+            method: 'PATCH',
+            body: JSON.stringify(body),
+        });
+    },
+
     async delete(endpoint: string, options: CustomRequestInit = {}) {
         return this.request(endpoint, { ...options, method: 'DELETE' });
     },
