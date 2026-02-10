@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/features/dashboard/components/Sidebar";
+import { NotificationDropdown } from "@/features/dashboard/components/NotificationDropdown";
 import { Search, Bell, Menu, X, Mail, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { useProfile } from "@/features/user/hooks/useProfile";
@@ -116,10 +117,7 @@ export default function DashboardLayout({
 
                     <div className="flex items-center gap-6">
                         {/* Bell Icon */}
-                        <button className="p-2.5 text-slate-900 hover:bg-slate-50 rounded-full transition-all relative">
-                            <Bell className="w-6 h-6" />
-                            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#FF3B30] rounded-full border-2 border-white"></span>
-                        </button>
+                        <NotificationDropdown />
 
                         {/* Language Selector */}
                         <div className="flex items-center gap-1.5 px-3 h-10 bg-slate-50 rounded-full border border-slate-100/50 cursor-pointer hover:bg-slate-100 transition-colors hidden md:flex">

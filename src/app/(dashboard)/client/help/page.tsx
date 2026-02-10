@@ -19,13 +19,15 @@ import {
     Check
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSubmitTicket, useMyTickets } from "@/features/user/hooks/useSupport";
 
 const HELP_CATEGORIES = [
     { id: "general", label: "General", icon: HelpCircle },
     { id: "bookings", label: "Bookings", icon: BookOpen },
     { id: "payments", label: "Payments", icon: CreditCard },
     { id: "security", label: "Security", icon: ShieldCheck },
-    { id: "contact", label: "Contact Support", icon: MessageCircle },
+    { id: "tickets", label: "My Support Requests", icon: MessageCircle },
+    { id: "contact", label: "Contact Support", icon: Send },
 ];
 
 const FAQS = {
@@ -58,6 +60,28 @@ export default function HelpPage() {
 
     // Support Form States
     const [department, setDepartment] = useState("Customer Support");
+    const [subject, setSubject] = useState("");
+    const [message, setMessage] = useState("");
+    const submitTicket = useSubmitTicket();
+    const { data: ticketsData, isLoading: isTicketsLoading } = useMyTickets();
+    const tickets = ticketsData?.data || [];
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await submitTicket.mutateAsync({
+                subject,
+                message,
+                priority: department === "Safety & Security" ? "HIGH" : "NORMAL",
+                // name and email will be handled by backend if authenticated, 
+                // but we could also pass them if we wanted guest support info
+            });
+            setSubject("");
+            setMessage("");
+        } catch (error) {
+            // Error handled by hook
+        }
+    };
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -112,7 +136,141 @@ export default function HelpPage() {
 
                 {/* Right Content Area */}
                 <div className="flex-1 space-y-8">
-                    {activeTab !== "contact" ? (
+                    {activeTab === "tickets" ? (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="bg-white rounded-[32px] border border-slate-100 p-8">
+                                <h2 className="text-lg font-semibold text-slate-900 mb-6">My Support Requests</h2>
+                                {isTicketsLoading ? (
+                                    <div className="py-12 text-center text-slate-500 font-medium">Loading your tickets...</div>
+                                ) : tickets.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-500 font-medium">
+                                        You haven&apos;t submitted any support requests yet.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {tickets.map((ticket: any) => (
+                                            <div key={ticket.id} className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 space-y-3">
+                                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                                    <div className="space-y-1">
+                                                        <h3 className="text-[15px] font-bold text-slate-900">{ticket.subject}</h3>
+                                                        <p className="text-[12px] text-slate-400 font-medium">
+                                                            ID: {ticket.id} • {new Date(ticket.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={cn(
+                                                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
+                                                            ticket.status === "RESOLVED" ? "bg-green-100 text-green-600" :
+                                                            ticket.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
+                                                        )}>
+                                                            {ticket.status}
+                                                        </span>
+                                                        <span className={cn(
+                                                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
+                                                            ticket.priority === "HIGH" || ticket.priority === "URGENT" ? "bg-red-100 text-red-600" : "bg-slate-200 text-slate-600"
+                                                        )}>
+                                                            {ticket.priority}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[14px] text-slate-600 font-medium line-clamp-2">{ticket.message}</p>
+                                                
+                                                {!ticket.adminNotified && ticket.notificationError && (
+                                                    <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[12px] font-semibold">
+                                                        <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+                                                        <div className="space-y-0.5">
+                                                            <p>Admin notification failed: {ticket.notificationError}</p>
+                                                            <p className="opacity-70">Our system will keep retrying. Don&apos;t worry, your ticket is saved.</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {ticket.adminNotified ? (
+                                                    <div className="flex items-center gap-1.5 text-green-600 text-[12px] font-bold">
+                                                        <Check className="w-4 h-4" />
+                                                        Admin Notified Successfully
+                                                    </div>
+                                                ) : !ticket.notificationError ? (
+                                                    <div className="flex items-center gap-1.5 text-slate-400 text-[12px] font-bold">
+                                                        <Send className="w-4 h-4 animate-pulse" />
+                                                        Notification in process...
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ) : activeTab === "contact" ? (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
+                                <div className="space-y-1">
+                                    <h2 className="text-lg font-semibold text-slate-900">Contact Support</h2>
+                                    <p className="text-[13px] text-slate-500 font-medium">Send us a message and we&apos;ll get back to you as soon as possible.</p>
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Subject</label>
+                                            <input
+                                                type="text"
+                                                placeholder="Explain your problem"
+                                                value={subject}
+                                                onChange={(e) => setSubject(e.target.value)}
+                                                required
+                                                className="w-full h-12 px-5 bg-white border border-slate-100 rounded-xl text-[13px] font-semibold text-slate-900 outline-none border-border focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Department</label>
+                                            <ModernSelect
+                                                value={department}
+                                                onChange={setDepartment}
+                                                options={["Customer Support", "Billing & Payments", "Technical Issue", "Safety & Security"]}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Message</label>
+                                        <textarea
+                                            placeholder="Provide as much detail as possible..."
+                                            rows={5}
+                                            value={message}
+                                            onChange={(e) => setMessage(e.target.value)}
+                                            required
+                                            className="w-full p-5 bg-white border border-slate-100 rounded-xl text-[13px] font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={submitTicket.isPending}
+                                        className="px-10 h-12 bg-primary text-white rounded-xl font-semibold text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2 disabled:opacity-50"
+                                    >
+                                        {submitTicket.isPending ? "Sending..." : "Send Message"}
+                                        <Send className="w-4 h-4" />
+                                    </button>
+                                </form>
+                            </div>
+
+                            {/* Other contact methods */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <ContactMethod
+                                    icon={<Mail className="w-5 h-5 text-primary" />}
+                                    title="Email Support"
+                                    value="support@pixbay.com"
+                                    description="Average response time: 2-4 hours"
+                                />
+                                <ContactMethod
+                                    icon={<Phone className="w-5 h-5 text-primary" />}
+                                    title="Call Us"
+                                    value="+250 788 123 456"
+                                    description="Mon - Fri, 9:00 AM - 6:00 PM"
+                                />
+                            </div>
+                        </div>
+                    ) : (
                         <div className="space-y-6">
                             <div className="flex items-center justify-between px-1">
                                 <h2 className="text-xl font-semibold text-slate-900 capitalize">{activeTab} FAQ</h2>
@@ -171,60 +329,6 @@ export default function HelpPage() {
                                 >
                                     Contact Support
                                 </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
-                            <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
-                                <div className="space-y-1">
-                                    <h2 className="text-lg font-semibold text-slate-900">Contact Support</h2>
-                                    <p className="text-[13px] text-slate-500 font-medium">Send us a message and we&apos;ll get back to you as soon as possible.</p>
-                                </div>
-
-                                <form className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Subject</label>
-                                            <input type="text" placeholder="Explain your problem" className="w-full h-12 px-5 bg-white border border-slate-100 rounded-xl text-[13px] font-semibold text-slate-900 outline-none border-border focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Department</label>
-                                            <ModernSelect
-                                                value={department}
-                                                onChange={setDepartment}
-                                                options={["Customer Support", "Billing & Payments", "Technical Issue", "Safety & Security"]}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Message</label>
-                                        <textarea
-                                            placeholder="Provide as much detail as possible..."
-                                            rows={5}
-                                            className="w-full p-5 bg-white border border-slate-100 rounded-xl text-[13px] font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                                        />
-                                    </div>
-                                    <button type="button" className="px-10 h-12 bg-primary text-white rounded-xl font-semibold text-[13px] hover:bg-primary/90 transition-all flex items-center gap-2">
-                                        Send Message
-                                        <Send className="w-4 h-4" />
-                                    </button>
-                                </form>
-                            </div>
-
-                            {/* Other contact methods */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <ContactMethod
-                                    icon={<Mail className="w-5 h-5 text-primary" />}
-                                    title="Email Support"
-                                    value="support@pixbay.com"
-                                    description="Average response time: 2-4 hours"
-                                />
-                                <ContactMethod
-                                    icon={<Phone className="w-5 h-5 text-primary" />}
-                                    title="Call Us"
-                                    value="+250 788 123 456"
-                                    description="Mon - Fri, 9:00 AM - 6:00 PM"
-                                />
                             </div>
                         </div>
                     )}

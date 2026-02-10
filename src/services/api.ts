@@ -2,6 +2,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/a
 
 interface CustomRequestInit extends RequestInit {
     _isRetry?: boolean;
+    params?: Record<string, any>;
 }
 
 export const api = {
@@ -43,7 +44,21 @@ export const api = {
             throw new Error("API configuration mismatch");
         }
 
-        const url = `${API_BASE_URL}${endpoint}`;
+        let url = `${API_BASE_URL}${endpoint}`;
+        
+        if (options.params) {
+            const queryParams = new URLSearchParams();
+            Object.entries(options.params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    queryParams.append(key, String(value));
+                }
+            });
+            const queryString = queryParams.toString();
+            if (queryString) {
+                url += (url.includes('?') ? '&' : '?') + queryString;
+            }
+        }
+
         console.log(`[API Request] ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body as string) : "");
 
         const accessToken = typeof window !== "undefined" ? localStorage.getItem("pixbay_access_token") : null;
