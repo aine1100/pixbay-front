@@ -1,10 +1,20 @@
 import { api } from "@/services/api";
 import { LoginFormData } from "../schemas/login.schema";
 import { RegisterFormData } from "../schemas/register.schema";
+import { authStorage } from "@/lib/auth-storage";
 
 export const authService = {
     async login(data: LoginFormData) {
-        return api.post("/auth/login", data);
+        const response = await api.post("/auth/login", data);
+        const authData = response.data || response; // Handle both direct and nested response
+        if (authData.accessToken && authData.refreshToken) {
+            authStorage.setTokens(authData.accessToken, authData.refreshToken);
+        }
+        return response;
+    },
+
+    async logout() {
+        authStorage.clearTokens();
     },
 
     async register(data: RegisterFormData) {
@@ -27,5 +37,9 @@ export const authService = {
 
     async resetPassword(data: { email: string; otp: string; newPassword: string }) {
         return api.post("/auth/reset-password", data);
+    },
+
+    async refreshToken(token: string) {
+        return api.post("/auth/refresh-token", { refreshToken: token });
     },
 };

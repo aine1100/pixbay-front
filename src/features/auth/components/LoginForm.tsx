@@ -16,6 +16,8 @@ import { loginSchema, LoginFormData } from "../schemas/login.schema";
 import { authService } from "../services/auth.service";
 import { toast } from "react-hot-toast";
 
+import { useUserStore } from "@/features/user/store/userStore";
+
 export function LoginForm() {
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +32,8 @@ export function LoginForm() {
         resolver: zodResolver(loginSchema),
     });
 
+    const setUser = useUserStore((state) => state.setUser);
+
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);
         setError(null);
@@ -37,13 +41,26 @@ export function LoginForm() {
             const response = await authService.login(data);
             toast.success("Login successful!");
             console.log("Login Success:", response);
-            // Redirect or show success
-            router.push("/dashboard");
+            
+            // Redirect based on role (handle both direct and nested response)
+            const authData = response.data || response;
+            if (authData.user) {
+                setUser(authData.user);
+            }
+            const role = authData.user?.role || authData.role;
+            if (role === "CLIENT") {
+                router.push("/client");
+            } else if (role === "CREATOR") {
+                // Creator portal not yet implemented, redirect to /client for now
+                toast.success("Welcome, Creator! Redirecting to dashboard...");
+                router.push("/client");
+            } else {
+                router.push("/client");
+            }
         } catch (err) {
             const message = err instanceof Error ? err.message : "Failed to login";
             setError(message);
             toast.error(message);
-        } finally {
             setIsLoading(false);
         }
     };

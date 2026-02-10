@@ -4,6 +4,7 @@ import { WelcomeBanner } from "@/features/dashboard/components/WelcomeBanner";
 import { StatsCard } from "@/features/dashboard/components/StatsCard";
 import { TrendingCreators } from "@/features/dashboard/components/TrendingCreators";
 import { RecentBookings } from "@/features/dashboard/components/RecentBookings";
+import { RecentPayments } from "@/features/dashboard/components/RecentPayments";
 import { CalendarWidget } from "@/features/dashboard/components/CalendarWidget";
 import Link from "next/link";
 import {
@@ -14,11 +15,16 @@ import {
     ArrowUpRight
 } from "lucide-react";
 
+import { useUserStore } from "@/features/user/store/userStore";
+
 export default function ClientDashboardPage() {
+    const { user } = useUserStore();
+    const userName = user?.firstName || "User";
+
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
             {/* Top Row: Welcome */}
-            <WelcomeBanner name="Alena" />
+            <WelcomeBanner name={userName} />
 
             {/* Asymmetrical Grid: 3 Columns on XL, 2 on LG, 1 on Mobile */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 outline-none">
@@ -67,22 +73,9 @@ export default function ClientDashboardPage() {
                         <RecentBookings />
                     </div>
 
-                    {/* Community & Feedback */}
-                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 flex flex-col min-h-[300px]">
-                        <div className="flex items-center justify-between mb-8">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-700 tracking-tight">Recent Reviews</h3>
-                                <p className="text-[11px] text-slate-700 font-medium uppercase mt-1 tracking-wider">What creators said about you</p>
-                            </div>
-                            <button className="text-xs font-semibold text-primary hover:underline">View History</button>
-                        </div>
-                        <div className="flex-1 flex flex-col justify-center items-center text-center p-8">
-                            <div className="w-16 h-16 bg-red-50 rounded-[28px] flex items-center justify-center text-primary mb-4 transform -rotate-12 transition-transform hover:rotate-0 duration-300">
-                                <Star className="w-8 h-8 fill-primary/10" />
-                            </div>
-                            <h4 className="text-sm font-semibold text-slate-700 mb-1">No feedback yet</h4>
-                            <p className="text-xs text-slate-700 font-medium max-w-[200px]">Complete your first booking to start building your reputation.</p>
-                        </div>
+                    {/* Recent Payments Section */}
+                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 flex flex-col min-h-[400px]">
+                        <RecentPayments />
                     </div>
                 </div>
 

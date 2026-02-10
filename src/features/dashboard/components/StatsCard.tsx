@@ -21,7 +21,7 @@ export function StatsCard({ title, value, trend, trendType, description, icon: I
                 </div>
                 <div className={cn(
                     "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold",
-                    trendType === "up" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                    trendType === "up" ? "bg-red-50 text-primary" : "bg-slate-100 text-slate-600"
                 )}>
                     {trendType === "up" ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                     {trend}

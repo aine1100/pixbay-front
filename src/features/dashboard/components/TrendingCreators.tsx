@@ -35,7 +35,7 @@ export function TrendingCreators() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <h4 className="text-xs font-semibold text-slate-700 truncate">{creator.name}</h4>
-                            <p className="text-[10px] font-medium text-primary uppercase tracking-tighter">{creator.role}</p>
+                            <p className="text-[10px] font-medium text-slate-500  tracking-tighter">{creator.role}</p>
                         </div>
                         <div className="w-8 h-8 flex items-center justify-center bg-white border border-slate-100 rounded-lg text-slate-700 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all">
                             <ChevronRight className="w-4 h-4" />

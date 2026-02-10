@@ -1,16 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/features/dashboard/components/Sidebar";
 import { Search, Bell, Menu, X, Mail, ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { useProfile } from "@/features/user/hooks/useProfile";
+import { Loading } from "@/components/ui/loading";
+import { authStorage } from "@/lib/auth-storage";
+
+import { useUserStore } from "@/features/user/store/userStore";
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    // Global user state (from token initially)
+    const { user: storeUser } = useUserStore();
+    
+    // Fetch fresh profile data
+    const { data: profileUser, isLoading: isProfileLoading, isError } = useProfile();
+
+    useEffect(() => {
+        const checkAuth = () => {
+            const accessToken = localStorage.getItem("pixbay_access_token");
+            const refreshToken = localStorage.getItem("pixbay_refresh_token");
+            
+            const isAccessExpired = !accessToken || authStorage.isTokenExpired();
+            
+            // For refresh token, we don't have a decoder yet but we know it's in localStorage
+            // If access is expired AND there's no refresh token, THEN we log out.
+            // If access is expired but refresh exists, the next API call will attempt to renew.
+            if (isAccessExpired && !refreshToken) {
+                console.warn("Session expired and no refresh token found. Logging out...");
+                localStorage.removeItem("pixbay_access_token");
+                localStorage.removeItem("pixbay_refresh_token");
+                router.push("/login?expired=true");
+            }
+        };
+
+        // Check immediately
+        checkAuth();
+
+        // Check periodically (every minute)
+        const interval = setInterval(checkAuth, 60 * 1000);
+        return () => clearInterval(interval);
+    }, [router]);
+
+    // Only show full-screen loading if we don't even have a token user
+    if (isProfileLoading && !storeUser) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+                <Loading size="lg" />
+                <p className="mt-4 text-slate-500 font-medium animate-pulse">Loading ...</p>
+            </div>
+        );
+    }
+
+    const displayUser = profileUser || storeUser;
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] flex font-sans">
@@ -49,7 +100,7 @@ export default function DashboardLayout({
                         </button>
 
                         <div className="flex items-center gap-4 w-full">
-                            
+
 
                             {/* Search Bar */}
                             <div className="relative max-w-lg w-full">
@@ -73,27 +124,29 @@ export default function DashboardLayout({
                         {/* Language Selector */}
                         <div className="flex items-center gap-1.5 px-3 h-10 bg-slate-50 rounded-full border border-slate-100/50 cursor-pointer hover:bg-slate-100 transition-colors hidden md:flex">
                             <div className="w-6 h-4 relative overflow-hidden rounded-sm">
-                                <Image 
-                                    src="https://flagcdn.com/w40/rw.png" 
+                                <Image
+                                    src="https://flagcdn.com/w40/rw.png"
                                     alt="Rwanda"
                                     fill
                                     className="object-cover"
                                 />
                             </div>
                         </div>
-                        
+
                         {/* Profile Info */}
                         <div className="flex items-center gap-4 pl-6 border-l border-slate-100">
                             <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-100 overflow-hidden relative cursor-pointer">
                                 <Image
-                                    src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"
+                                    src={displayUser?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"}
                                     alt="Profile"
                                     fill
                                     className="object-cover"
                                 />
                             </div>
                             <div className="flex items-center gap-2 cursor-pointer group">
-                                <p className="text-sm font-semibold text-slate-900 leading-none">Alena SHIMA</p>
+                                <p className="text-sm font-semibold text-slate-900 leading-none">
+                                    {displayUser?.firstName && displayUser?.lastName ? `${displayUser.firstName} ${displayUser.lastName}` : (displayUser?.firstName || displayUser?.email || "User")}
+                                </p>
                                 <ChevronDown className="w-4 h-4 text-slate-900 group-hover:translate-y-0.5 transition-transform" />
                             </div>
                         </div>

@@ -40,7 +40,7 @@ export function RecentBookings() {
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h3 className="text-lg font-semibold text-slate-700 tracking-tight">Recent Bookings</h3>
-                    <p className="text-[11px] text-slate-700 font-medium tracking-tight uppercase">Tracking your latest project sessions</p>
+                    <p className="text-[11px] text-slate-700 font-medium tracking-tight ">Tracking your latest project sessions</p>
                 </div>
                 <button className="p-2 hover:bg-slate-50 rounded-xl text-slate-700 transition-colors">
                     <MoreHorizontal className="w-5 h-5" />
@@ -76,7 +76,7 @@ export function RecentBookings() {
                             <div className="text-right">
                                 <span className={cn(
                                     "inline-block px-2 py-0.5 rounded-lg text-[9px] font-semibold mb-2 uppercase tracking-wider",
-                                    booking.status === "Approved" ? "bg-green-50 text-green-600" : "bg-orange-50 text-orange-600"
+                                    booking.status === "Approved" ? "bg-red-50 text-primary" : "bg-slate-100 text-slate-600"
                                 )}>
                                     {booking.status}
                                 </span>
