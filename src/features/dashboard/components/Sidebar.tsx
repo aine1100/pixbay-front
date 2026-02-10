@@ -13,8 +13,18 @@ import {
     LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useUserStore } from "@/features/user/store/userStore";
+import { authService } from "@/features/auth/services/auth.service";
+import { useRouter } from "next/navigation";
 
-const MENU_ITEMS = [
+interface MenuItem {
+    label: string;
+    icon: any;
+    href: string;
+    badge?: string;
+}
+
+const CLIENT_MENU_ITEMS: MenuItem[] = [
     { label: "Home", icon: LayoutDashboard, href: "/client" },
     { label: "Find Creators", icon: Search, href: "/client/find-creators" },
     { label: "Bookings", icon: Calendar, href: "/client/bookings" },
@@ -22,42 +32,62 @@ const MENU_ITEMS = [
     { label: "Payments", icon: Wallet, href: "/client/payments" },
 ];
 
-const GENERAL_ITEMS = [
-    { label: "Settings", icon: Settings, href: "/client/settings" },
-    { label: "Help", icon: HelpCircle, href: "/client/help" },
+const CREATOR_MENU_ITEMS: MenuItem[] = [
+    { label: "Home", icon: LayoutDashboard, href: "/creator" },
+    { label: "Portfolio", icon: Search, href: "/creator/portfolio" },
+    { label: "Bookings", icon: Calendar, href: "/creator/bookings" },
+    { label: "Messages", icon: MessageSquare, href: "/creator/messages" },
+    { label: "Payments", icon: Wallet, href: "/creator/payments" },
+    { label: "Reviews", icon: MessageSquare, href: "/creator/reviews" },
+];
+
+const GENERAL_ITEMS = (role: string): MenuItem[] => [
+    { label: "Settings", icon: Settings, href: `/${role.toLowerCase()}/settings` },
+    { label: "Help", icon: HelpCircle, href: `/${role.toLowerCase()}/help` }
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
+    const { user } = useUserStore();
+    const role = user?.role || "CLIENT";
+    const menuItems = role === "CREATOR" ? CREATOR_MENU_ITEMS : CLIENT_MENU_ITEMS;
+    const generalItems = GENERAL_ITEMS(role);
+
+    const handleLogout = () => {
+        authService.logout();
+        router.push("/login");
+    };
 
     return (
         <div className="flex flex-col h-full bg-white">
-            {/* Logo */}
-            <div className="flex items-center gap-3 px-8 h-20 items-center">
-                <span className="text-xl font-semibold text-slate-900">Pixbay</span>
+            <div className="flex items-center gap-3 px-8 h-20">
+                <span className="text-xl font-semibold text-slate-900 underline decoration-primary decoration-4 underline-offset-8">Pixbay</span>
             </div>
 
             <div className="flex-1 px-4 py-4 space-y-8 overflow-y-auto custom-scrollbar">
                 <div>
                     <nav className="space-y-1">
-                        {MENU_ITEMS.map((item) => {
-                            const isActive = pathname === item.href ||
-                                (item.href === "/client/find-creators" && pathname.startsWith("/client/creators")) ||
-                                (item.href === "/client/bookings" && pathname.startsWith("/client/bookings/"));
+                        {menuItems.map((item) => {
+                            // Logic for active state including subroutes
+                            const isActive = pathname === item.href || 
+                                (pathname.startsWith(item.href + "/") && item.href !== "/client" && item.href !== "/creator") ||
+                                (item.href === "/client/find-creators" && pathname.startsWith("/client/creators"));
+
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "group flex items-center justify-between px-4 h-12 rounded-lg transition-all relative overflow-hidden",
+                                        "group flex items-center justify-between px-4 h-12 rounded-xl transition-all relative overflow-hidden",
                                         isActive
                                             ? "bg-primary text-white"
-                                            : "text-slate-900 hover:bg-slate-50"
+                                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-700")} />
-                                        <span className="text-[14px] font-medium">{item.label}</span>
+                                        <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-900")} />
+                                        <span className="text-[14px] font-semibold">{item.label}</span>
                                     </div>
                                     {item.badge && (
                                         <span className={cn(
@@ -75,32 +105,34 @@ export function Sidebar() {
 
                 <div>
                     <nav className="space-y-1">
-                        {GENERAL_ITEMS.map((item) => {
-                            const isActive = pathname === item.href;
+                        {generalItems.map((item) => {
+                            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
                                     className={cn(
-                                        "group flex items-center gap-4 px-4 h-12 rounded-lg transition-all relative",
+                                        "group flex items-center gap-4 px-4 h-12 rounded-xl transition-all relative",
                                         isActive
                                             ? "bg-primary text-white"
-                                            : "text-slate-900 hover:bg-slate-50"
+                                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                     )}
                                 >
-                                    <item.icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-700")} />
-                                    <span className="text-[14px] font-medium">{item.label}</span>
+                                    <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-900")} />
+                                    <span className="text-[14px] font-semibold">{item.label}</span>
                                 </Link>
                             );
                         })}
-                        <button className="w-full group flex items-center gap-4 px-4 h-12 rounded-xl text-slate-900 hover:text-primary hover:bg-slate-50 transition-all">
-                            <LogOut className="w-5 h-5 text-slate-700 group-hover:text-primary" />
-                            <span className="text-[14px] font-medium">Logout</span>
+                        <button 
+                            onClick={handleLogout}
+                            className="w-full group flex items-center gap-4 px-4 h-12 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all text-left mt-4"
+                        >
+                            <LogOut className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                            <span className="text-[14px] font-semibold">Logout</span>
                         </button>
                     </nav>
                 </div>
             </div>
-
         </div>
     );
 }
