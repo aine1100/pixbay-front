@@ -47,9 +47,10 @@ export default function SettingsPage() {
     // Preference States
     const [language, setLanguage] = useState("English (US)");
     const [currency, setCurrency] = useState("USD ($)");
+    const [sessionPage, setSessionPage] = useState(1);
 
     const { data: profile, isLoading: isProfileLoading } = useProfile();
-    const { data: sessions, isLoading: isSessionsLoading } = useUserSessions();
+    const { data: sessions, isLoading: isSessionsLoading } = useUserSessions(sessionPage);
     const updateProfile = useUpdateProfile();
     const revokeSession = useRevokeSession();
 
@@ -483,10 +484,37 @@ export default function SettingsPage() {
 
                             {/* Active Sessions */}
                             <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
-                                <h3 className="text-md font-semibold text-slate-900">Active Sessions</h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-md font-semibold text-slate-900">Active Sessions</h3>
+                                    {sessions?.pagination?.totalPages > 1 && (
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={() => setSessionPage(prev => Math.max(1, prev - 1))}
+                                                disabled={sessionPage === 1 || isSessionsLoading}
+                                                className="p-2 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
+                                            >
+                                                <ChevronDown className="w-5 h-5 text-slate-400 rotate-90" />
+                                            </button>
+                                            <span className="text-[13px] font-semibold text-slate-600">
+                                                {sessionPage} / {sessions.pagination.totalPages}
+                                            </span>
+                                            <button 
+                                                onClick={() => setSessionPage(prev => Math.min(sessions.pagination.totalPages, prev + 1))}
+                                                disabled={sessionPage === sessions.pagination.totalPages || isSessionsLoading}
+                                                className="p-2 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
+                                            >
+                                                <ChevronDown className="w-5 h-5 text-slate-400 -rotate-90" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="space-y-6">
-                                    {sessions && sessions.length > 0 ? (
-                                        sessions.map((session: any) => (
+                                    {isSessionsLoading ? (
+                                        <div className="flex justify-center py-4">
+                                            <Loading size="sm" />
+                                        </div>
+                                    ) : sessions?.data?.length > 0 ? (
+                                        sessions.data.map((session: any) => (
                                             <SessionItem
                                                 key={session.id}
                                                 device={session.deviceInfo || "Unknown Device"}

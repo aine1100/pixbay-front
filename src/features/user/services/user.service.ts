@@ -11,9 +11,9 @@ export const userService = {
         return response.data || response;
     },
 
-    async getSessions() {
-        const response = await api.get("/users/me/sessions");
-        return response.data || response;
+    async getSessions(page = 1, limit = 5) {
+        const response = await api.get(`/users/me/sessions?page=${page}&limit=${limit}`);
+        return response;
     },
 
     async revokeSession(sessionId: string) {

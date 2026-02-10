@@ -2,10 +2,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userService } from "../services/user.service";
 import { toast } from "react-hot-toast";
 
-export const useUserSessions = () => {
+export const useUserSessions = (page = 1) => {
     return useQuery({
-        queryKey: ["userSessions"],
-        queryFn: userService.getSessions,
+        queryKey: ["userSessions", page],
+        queryFn: () => userService.getSessions(page),
     });
 };
 
