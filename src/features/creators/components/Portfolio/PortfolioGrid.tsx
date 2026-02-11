@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, Play, FileText, Link as LinkIcon } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, FileText, Link as LinkIcon, Camera } from "lucide-react";
 
 interface PortfolioMedia {
     id: string;
@@ -14,30 +14,51 @@ interface PortfolioGridProps {
 }
 
 export function PortfolioGrid({ items }: PortfolioGridProps) {
-    const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
+    const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // Grouping logic similar to client-side
+    const groupedMedia = Object.values((items || []).filter(m => m.type === 'IMAGE' || m.type === 'VIDEO').reduce((acc: any, m: any) => {
+        const projectId = (m.metadata as any)?.projectId || `legacy_${m.id}`;
+        if (!acc[projectId]) {
+            acc[projectId] = {
+                id: projectId,
+                title: (m.metadata as any)?.title || "Work Sample",
+                description: (m.metadata as any)?.description || "Creative showcase item",
+                items: []
+            };
+        }
+        acc[projectId].items.push(m);
+        return acc;
+    }, {}));
+
+    const linkItems = items.filter(item => item.type === "LINK");
+    const documentItems = items.filter(item => item.type === "DOCUMENT");
 
     const nextItem = useCallback(() => {
-        if (selectedItemIndex !== null) {
-            setSelectedItemIndex((selectedItemIndex + 1) % items.length);
+        if (selectedProjectIndex !== null && groupedMedia[selectedProjectIndex]) {
+            const projectItems = (groupedMedia[selectedProjectIndex] as any).items;
+            setCurrentImageIndex((prev) => (prev + 1) % projectItems.length);
         }
-    }, [selectedItemIndex, items.length]);
+    }, [selectedProjectIndex, groupedMedia]);
 
     const prevItem = useCallback(() => {
-        if (selectedItemIndex !== null) {
-            setSelectedItemIndex((selectedItemIndex - 1 + items.length) % items.length);
+        if (selectedProjectIndex !== null && groupedMedia[selectedProjectIndex]) {
+            const projectItems = (groupedMedia[selectedProjectIndex] as any).items;
+            setCurrentImageIndex((prev) => (prev - 1 + projectItems.length) % projectItems.length);
         }
-    }, [selectedItemIndex, items.length]);
+    }, [selectedProjectIndex, groupedMedia]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (selectedItemIndex === null) return;
-            if (e.key === "Escape") setSelectedItemIndex(null);
+            if (selectedProjectIndex === null) return;
+            if (e.key === "Escape") setSelectedProjectIndex(null);
             if (e.key === "ArrowRight") nextItem();
             if (e.key === "ArrowLeft") prevItem();
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [selectedItemIndex, nextItem, prevItem]);
+    }, [selectedProjectIndex, nextItem, prevItem]);
 
     if (!items || items.length === 0) {
         return (
@@ -52,139 +73,215 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
     }
 
     return (
-        <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {items.map((item, index) => (
-                    <div
-                        key={item.id}
-                        onClick={() => setSelectedItemIndex(index)}
-                        className="group relative rounded-[24px] overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
-                    >
-                        {item.type === "IMAGE" && (
-                            <Image
-                                src={item.url}
-                                alt="Portfolio item"
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-110"
-                            />
-                        )}
-                        {item.type === "VIDEO" && (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-900">
-                                <Play className="w-12 h-12 text-white/50" />
-                            </div>
-                        )}
-                        {item.type === "LINK" && (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-white p-6 text-center">
-                                <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center mb-3">
-                                    <LinkIcon className="w-6 h-6 text-primary" />
-                                </div>
-                                <span className="text-sm font-semibold text-slate-900 line-clamp-2">{item.url}</span>
-                            </div>
-                        )}
-                        {item.type === "DOCUMENT" && (
-                            <div className="w-full h-full flex flex-col items-center justify-center bg-white p-6 text-center">
-                                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
-                                    <FileText className="w-6 h-6 text-slate-400" />
-                                </div>
-                                <span className="text-sm font-semibold text-slate-900 line-clamp-2">{item.metadata?.originalName || "Document"}</span>
-                            </div>
-                        )}
+        <div className="space-y-12">
+            {/* Visual Media Section */}
+            {groupedMedia.length > 0 && (
+                <div className="space-y-6">
+                    <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Visual Portfolio
+                        <span className="h-px bg-slate-100 flex-1" />
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {groupedMedia.map((project: any, index: number) => {
+                            const coverItem = project.items[0];
+                            return (
+                                <div
+                                    key={project.id}
+                                    onClick={() => {
+                                        setSelectedProjectIndex(index);
+                                        setCurrentImageIndex(0);
+                                    }}
+                                    className="group relative rounded-[24px] overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
+                                >
+                                    {coverItem.type === "IMAGE" && (
+                                        <Image
+                                            src={coverItem.url}
+                                            alt={project.title}
+                                            fill
+                                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                    )}
+                                    {coverItem.type === "VIDEO" && (
+                                        <div className="relative w-full h-full">
+                                            <video
+                                                src={coverItem.url}
+                                                className="w-full h-full object-cover"
+                                                muted
+                                                loop
+                                                playsInline
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                <Play className="w-12 h-12 text-white/80" />
+                                            </div>
+                                        </div>
+                                    )}
 
-                        <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                             <span className="text-white text-xs font-semibold uppercase tracking-wider bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
-                                {item.type}
-                             </span>
-                        </div>
+                                    {/* Multi-item Badge */}
+                                    {project.items.length > 1 && (
+                                        <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2 z-10">
+                                            <Camera className="w-3.5 h-3.5 text-white" />
+                                            <span className="text-[11px] font-bold text-white leading-none">{project.items.length} Files</span>
+                                        </div>
+                                    )}
+
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <h4 className="text-white font-semibold text-lg truncate">{project.title}</h4>
+                                        <p className="text-white/70 text-xs line-clamp-1">{project.description}</p>
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
-                ))}
-            </div>
+                </div>
+            )}
+
+            {/* Links and Documents Row */}
+            {(linkItems.length > 0 || documentItems.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
+                    {/* Links Section */}
+                    {linkItems.length > 0 && (
+                        <div className="space-y-6">
+                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                External Works
+                                <span className="h-px bg-slate-100 flex-1" />
+                            </h3>
+                            <div className="space-y-3">
+                                {linkItems.map((item) => (
+                                    <a
+                                        key={item.id}
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-white hover:shadow-sm transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/20 transition-all">
+                                            <LinkIcon className="w-5 h-5 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-semibold text-slate-900 truncate">{item.metadata?.title || "Project Link"}</h4>
+                                            <p className="text-[11px] text-slate-500 font-medium truncate">{item.url}</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Documents Section */}
+                    {documentItems.length > 0 && (
+                        <div className="space-y-6">
+                            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                Documents & CVs
+                                <span className="h-px bg-slate-100 flex-1" />
+                            </h3>
+                            <div className="space-y-3">
+                                {documentItems.map((item) => (
+                                    <a
+                                        key={item.id}
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-white hover:shadow-sm transition-all group"
+                                    >
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 group-hover:bg-primary/5 group-hover:border-primary/20 transition-all">
+                                            <FileText className="w-5 h-5 text-blue-500" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="text-sm font-semibold text-slate-900 truncate">{item.metadata?.originalName || "Portfolio Document"}</h4>
+                                            <p className="text-[11px] text-slate-500 font-medium truncate">PDF / DOCX</p>
+                                        </div>
+                                        <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Lightbox */}
-            {selectedItemIndex !== null && (
-                <div 
+            {selectedProjectIndex !== null && groupedMedia[selectedProjectIndex] && (
+                <div
                     className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300"
-                    onClick={() => setSelectedItemIndex(null)}
+                    onClick={() => setSelectedProjectIndex(null)}
                 >
                     <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
                         <div className="flex flex-col">
-                            <h3 className="text-white text-xl font-semibold capitalize">{items[selectedItemIndex].type.toLowerCase()}</h3>
+                            <h3 className="text-white text-xl font-semibold">{(groupedMedia[selectedProjectIndex] as any).title}</h3>
                             <p className="text-white/50 text-sm font-medium">
-                                Item {selectedItemIndex + 1} of {items.length}
+                                Item {currentImageIndex + 1} of {(groupedMedia[selectedProjectIndex] as any).items.length}
                             </p>
                         </div>
-                        <button 
+                        <button
                             className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
-                            onClick={(e) => { e.stopPropagation(); setSelectedItemIndex(null); }}
+                            onClick={(e) => { e.stopPropagation(); setSelectedProjectIndex(null); }}
                         >
                             <X className="w-6 h-6" />
                         </button>
                     </div>
 
                     <div className="relative w-full h-[70vh] flex items-center justify-center gap-8 px-4" onClick={(e) => e.stopPropagation()}>
-                        <button 
-                            className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
-                            onClick={prevItem}
-                        >
-                            <ChevronLeft className="w-8 h-8" />
-                        </button>
+                        {(groupedMedia[selectedProjectIndex] as any).items.length > 1 && (
+                            <>
+                                <button
+                                    className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                                    onClick={prevItem}
+                                >
+                                    <ChevronLeft className="w-8 h-8" />
+                                </button>
 
-                        <button 
-                            className="absolute right-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
-                            onClick={nextItem}
-                        >
-                            <ChevronRight className="w-8 h-8" />
-                        </button>
+                                <button
+                                    className="absolute right-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                                    onClick={nextItem}
+                                >
+                                    <ChevronRight className="w-8 h-8" />
+                                </button>
+                            </>
+                        )}
 
                         <div className="relative w-full max-w-5xl h-full rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-                            {items[selectedItemIndex].type === "IMAGE" && (
+                            {(groupedMedia[selectedProjectIndex] as any).items[currentImageIndex].type === "IMAGE" && (
                                 <Image
-                                    src={items[selectedItemIndex].url}
+                                    src={(groupedMedia[selectedProjectIndex] as any).items[currentImageIndex].url}
                                     alt="Portfolio item"
                                     fill
                                     className="object-contain"
                                     priority
                                 />
                             )}
-                            {items[selectedItemIndex].type === "LINK" && (
-                                <div className="w-full h-full bg-white flex flex-col items-center justify-center p-20 text-center">
-                                    <LinkIcon className="w-20 h-20 text-primary/20 mb-8" />
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-4">External Link</h2>
-                                    <p className="text-slate-500 max-w-lg mb-8">{items[selectedItemIndex].url}</p>
-                                    <a 
-                                        href={items[selectedItemIndex].url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="h-14 px-12 bg-primary text-white rounded-2xl font-semibold flex items-center justify-center hover:bg-primary/90 transition-all"
-                                    >
-                                        Visit Website
-                                    </a>
-                                </div>
-                            )}
-                            {items[selectedItemIndex].type === "VIDEO" && (
+                            {(groupedMedia[selectedProjectIndex] as any).items[currentImageIndex].type === "VIDEO" && (
                                 <div className="w-full h-full bg-slate-900 flex items-center justify-center">
-                                    <video 
-                                        src={items[selectedItemIndex].url} 
-                                        controls 
+                                    <video
+                                        src={(groupedMedia[selectedProjectIndex] as any).items[currentImageIndex].url}
+                                        controls
                                         className="max-w-full max-h-full"
                                         autoPlay
                                     />
                                 </div>
                             )}
-                            {items[selectedItemIndex].type === "DOCUMENT" && (
-                                <div className="w-full h-full bg-white flex flex-col items-center justify-center p-20 text-center">
-                                    <FileText className="w-20 h-20 text-slate-200 mb-8" />
-                                    <h2 className="text-2xl font-bold text-slate-900 mb-4">{items[selectedItemIndex].metadata?.originalName || "Document"}</h2>
-                                    <a 
-                                        href={items[selectedItemIndex].url} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="h-14 px-12 bg-slate-900 text-white rounded-2xl font-semibold flex items-center justify-center hover:bg-slate-800 transition-all"
-                                    >
-                                        Download Document
-                                    </a>
-                                </div>
-                            )}
                         </div>
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-8 px-8" onClick={(e) => e.stopPropagation()}>
+                        <div className="max-w-3xl text-center">
+                            <p className="text-white/80 text-lg leading-relaxed font-medium line-clamp-2">
+                                {(groupedMedia[selectedProjectIndex] as any).items[currentImageIndex]?.metadata?.description || (groupedMedia[selectedProjectIndex] as any).description}
+                            </p>
+                        </div>
+
+                        {(groupedMedia[selectedProjectIndex] as any).items.length > 1 && (
+                            <div className="flex gap-2">
+                                {(groupedMedia[selectedProjectIndex] as any).items.map((_: any, index: number) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentImageIndex(index)}
+                                        className={`transition-all duration-500 rounded-full ${index === currentImageIndex ? "w-10 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

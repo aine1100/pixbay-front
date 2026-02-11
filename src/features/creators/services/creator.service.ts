@@ -33,7 +33,7 @@ export const creatorService = {
         return api.post("/creators/activate/step1", formData);
     },
 
-    async submitPortfolio(data: { links: string[], files: File[] }) {
+    async submitPortfolio(data: { links: string[], files: File[], title?: string, explanation?: string }) {
         const formData = new FormData();
         // Backend expects 'links[]' and 'portfolio' fields
         data.links.forEach((link, index) => {
@@ -42,6 +42,9 @@ export const creatorService = {
         data.files.forEach(file => {
             formData.append("portfolio", file);
         });
+
+        if (data.title) formData.append("title", data.title);
+        if (data.explanation) formData.append("explanation", data.explanation);
         
         return api.post("/creators/activate/step2", formData);
     },

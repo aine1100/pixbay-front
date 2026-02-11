@@ -17,106 +17,98 @@ import {
     Share2,
     Heart,
     Calendar,
-    X
+    X,
+    Camera,
+    Video
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-// Mock data (expanded for multi-image gallery)
-const CREATOR_DATA = {
-    id: "1",
-    name: "Yvan SHEMA",
-    role: "Photographer",
-    specialty: "Weddings, professional shots",
-    rating: 4.5,
-    reviewsCount: 25,
-    location: "Musanze, Rwanda",
-    locationDetails: "Kinigi, Musanze",
-    email: "yvanshema@gmail.com",
-    socials: {
-        instagram: "yvanshema_1",
-        facebook: "yvanshema_1",
-        twitter: "yvanshema_1"
-    },
-    pricing: {
-        hourly: 20,
-        fixed: 100,
-        project: 300
-    },
-    joinedDate: "March 12, 2025",
-    overview: "I'm a portrait and corporate photographer helping professionals present themselves with confidence. My work is clean, well-lit, and intentional, designed to create strong first impressions for websites, LinkedIn, and marketing materials.",
-    portfolio: [
-        {
-            id: "p1",
-            title: "Tina & Cedro's wedding",
-            description: "I captured the most breathtaking moments for this wonderful events for the two love birds.",
-            images: [
-                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800",
-                "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800",
-                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
-                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
-            ]
-        },
-        {
-            id: "p2",
-            title: "Her Future Summit",
-            description: "Captured the most rememberable moments from Her Future Summit 2025",
-            images: [
-                "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=800",
-                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
-                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
-            ]
-        },
-        {
-            id: "p3",
-            title: "Product Launch",
-            description: "Professional product photography for a high-end tech startup.",
-            images: [
-                "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800",
-                "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800"
-            ]
-        }
-    ],
-    reviews: [
-        {
-            id: "r1",
-            user: "Tina",
-            location: "Musanze, Rwanda",
-            date: "1 week ago",
-            rating: 4.5,
-            comment: "From start to finish, the experience was excellent. Mr Yvan made the session easy and comfortable, and the final images exceeded our expectations. Communication was clear, turnaround was fast, and the quality was consistently high. It's easy to see why they come so highly recommended.",
-            avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150"
-        },
-        {
-            id: "r2",
-            user: "Tina",
-            location: "Kigali, Rwanda",
-            date: "2 months ago",
-            rating: 4,
-            comment: "This was one of the smoothest photography experiences we've had. He paid close attention to detail, guided us naturally during the shoot, and delivered clean, professional images that truly represented us. The results were outstanding, and we've already recommended them to colleagues and friends.",
-            avatar: "https://images.unsplash.com/photo-1531123897727-8f129c16fd3c?q=80&w=150"
-        }
-    ]
-};
+import { useCreatorProfile } from "@/features/creators/hooks/useCreators";
+import { Loading } from "@/components/ui/loading";
 
 export default function CreatorProfilePage() {
     const params = useParams();
+    const id = params.id as string;
+    const { data: creator, isLoading, isError } = useCreatorProfile(id);
+
     const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+    // Map backend data to UI-friendly structure
+    const displayData = creator ? {
+        id: creator.id,
+        name: `${creator.user.firstName} ${creator.user.lastName}`,
+        role: creator.creatorType === "PHOTOGRAPHER" ? "Photographer" : "Video Creator",
+        specialty: creator.specializations?.join(", ") || "Visual Arts",
+        rating: Number(creator.averageRating) || 0,
+        reviewsCount: creator.totalReviews || 0,
+        location: creator.baseCity || creator.user.city || "Rwanda",
+        locationDetails: `${creator.baseCity || ""}, ${creator.country || ""}`,
+        email: creator.user.email || "Contact via portal",
+        socials: {
+            instagram: (creator.portfolioLinks as any)?.instagram || "",
+            facebook: (creator.portfolioLinks as any)?.facebook || "",
+            twitter: (creator.portfolioLinks as any)?.twitter || ""
+        },
+        pricing: {
+            hourly: (creator.pricing as any)?.hourlyRate || 0,
+            currency: (creator.pricing as any)?.currency || "RWF"
+        },
+        joinedDate: new Date(creator.createdAt).toLocaleDateString("en-US", { month: 'long', day: 'numeric', year: 'numeric' }),
+        overview: creator.bio || "No overview provided.",
+        equipment: (creator.equipment as any[]) || [],
+        specializations: creator.specializations || [],
+        portfolio: Object.values((creator.portfolioMedia || []).filter((m: any) => m.type !== 'LINK').reduce((acc: any, m: any) => {
+            const projectId = (m.metadata as any)?.projectId || `legacy_${m.id}`;
+            if (!acc[projectId]) {
+                acc[projectId] = {
+                    id: projectId,
+                    title: (m.metadata as any)?.title || "Work Sample",
+                    description: (m.metadata as any)?.description || "Creative showcase item",
+                    items: []
+                };
+            }
+            acc[projectId].items.push({
+                id: m.id,
+                url: m.url,
+                type: m.type,
+                title: (m.metadata as any)?.title || "Work Sample",
+                description: (m.metadata as any)?.description || "Creative showcase item"
+            });
+            return acc;
+        }, {})),
+        externalLinks: (creator.portfolioMedia || []).filter((m: any) => m.type === 'LINK').map((m: any) => ({
+            id: m.id,
+            url: m.url,
+            title: (m.metadata as any)?.title || "Project Link",
+            description: (m.metadata as any)?.description || m.url
+        })),
+        reviews: (creator.user.reviewsReceived || []).map((r: any) => ({
+            id: r.id,
+            user: `${r.reviewer?.firstName || "Anonymous"} ${r.reviewer?.lastName || "User"}`,
+            location: `${r.reviewer?.city || ""}, ${r.reviewer?.country || ""}`,
+            date: new Date(r.createdAt).toLocaleDateString(),
+            rating: r.rating,
+            comment: r.comment,
+            avatar: (r.reviewer?.profilePicture && r.reviewer.profilePicture.startsWith('http')) 
+                ? r.reviewer.profilePicture 
+                : `https://ui-avatars.com/api/?name=${r.reviewer?.firstName || "A"}+${r.reviewer?.lastName || "U"}&background=random`
+        }))
+    } : null;
+
     const nextImage = useCallback(() => {
-        if (selectedProjectIndex !== null) {
-            const project = CREATOR_DATA.portfolio[selectedProjectIndex];
-            setCurrentImageIndex((currentImageIndex + 1) % project.images.length);
+        if (selectedProjectIndex !== null && displayData && displayData.portfolio[selectedProjectIndex]?.items.length > 0) {
+            const projectItems = displayData.portfolio[selectedProjectIndex].items;
+            setCurrentImageIndex((prev) => (prev + 1) % projectItems.length);
         }
-    }, [selectedProjectIndex, currentImageIndex]);
+    }, [selectedProjectIndex, displayData]);
 
     const prevImage = useCallback(() => {
-        if (selectedProjectIndex !== null) {
-            const project = CREATOR_DATA.portfolio[selectedProjectIndex];
-            setCurrentImageIndex((currentImageIndex - 1 + project.images.length) % project.images.length);
+        if (selectedProjectIndex !== null && displayData && displayData.portfolio[selectedProjectIndex]?.items.length > 0) {
+            const projectItems = displayData.portfolio[selectedProjectIndex].items;
+            setCurrentImageIndex((prev) => (prev - 1 + projectItems.length) % projectItems.length);
         }
-    }, [selectedProjectIndex, currentImageIndex]);
+    }, [selectedProjectIndex, displayData]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -128,6 +120,26 @@ export default function CreatorProfilePage() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [selectedProjectIndex, nextImage, prevImage]);
+
+    if (isLoading) return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center bg-transparent">
+            <Loading size="lg" />
+            <p className="mt-4 text-slate-400 font-medium">Loading ...</p>
+        </div>
+    );
+
+    if (isError || !displayData) return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center">
+            <p className="text-red-500 font-semibold text-lg">Failed to load creator profile.</p>
+            <Link href="/client/find-creators" className="mt-4 text-primary font-medium hover:underline">
+                Back to discovery
+            </Link>
+        </div>
+    );
+
+    const profilePictureUrl = (creator?.user.profilePicture && creator.user.profilePicture.startsWith('http')) 
+        ? creator.user.profilePicture 
+        : `https://ui-avatars.com/api/?name=${creator?.user.firstName}+${creator?.user.lastName}&background=random`;
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -153,22 +165,20 @@ export default function CreatorProfilePage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* LEFT COLUMN: Profile Card */}
                 <div className="lg:col-span-4 space-y-6">
                     <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8 shadow-none">
-                        {/* Avatar & Basic Info */}
                         <div className="flex flex-col items-center text-center space-y-4">
                             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white ring-1 ring-slate-100 relative group">
                                 <NextImage
-                                    src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400"
-                                    alt={CREATOR_DATA.name}
+                                    src={profilePictureUrl}
+                                    alt={displayData.name}
                                     fill
                                     className="object-cover"
                                 />
                             </div>
                             <div>
                                 <div className="flex items-center justify-center gap-2">
-                                    <h1 className="text-md font-semibold text-slate-900">{CREATOR_DATA.name}</h1>
+                                    <h1 className="text-md font-semibold text-slate-900">{displayData.name}</h1>
                                     <BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500/10" />
                                     <div className="w-6 h-5 relative overflow-hidden rounded-sm border border-slate-100">
                                         <NextImage
@@ -178,26 +188,24 @@ export default function CreatorProfilePage() {
                                             className="object-cover"
                                         />
                                     </div>
-                                    <span className="text-sm font-medium text-slate-500">{CREATOR_DATA.location}</span>
+                                    <span className="text-sm font-medium text-slate-500">{displayData.location}</span>
                                 </div>
                                 <p className="text-sm font-medium text-slate-600 mt-1 uppercase tracking-wider">
-                                    {CREATOR_DATA.role} <span className="text-slate-400">({CREATOR_DATA.specialty})</span>
+                                    {displayData.role} <span className="text-slate-400">({displayData.specialty})</span>
                                 </p>
                             </div>
                             <div className="flex items-center gap-6 pt-2">
                                 <div className="flex items-center gap-1.5">
                                     <div className="flex items-center text-yellow-500">
-                                        <Star className="w-5 h-5 fill-current" />
-                                        <Star className="w-5 h-5 fill-current" />
-                                        <Star className="w-5 h-5 fill-current" />
-                                        <Star className="w-5 h-5 fill-current" />
-                                        <Star className="w-5 h-5 text-yellow-500/30 fill-current" />
+                                        {[...Array(5)].map((_, i) => (
+                                            <Star key={i} className={`w-5 h-5 ${i < Math.floor(displayData.rating) ? "fill-current" : "text-yellow-500/30 fill-current"}`} />
+                                        ))}
                                     </div>
-                                    <span className="text-xl font-semibold text-slate-900">{CREATOR_DATA.rating}</span>
+                                    <span className="text-xl font-semibold text-slate-900">{displayData.rating.toFixed(1)}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-700">
                                     <MessageSquare className="w-5 h-5 text-slate-400" />
-                                    <span className="text-xl font-semibold">{CREATOR_DATA.reviewsCount}</span>
+                                    <span className="text-xl font-semibold">{displayData.reviewsCount}</span>
                                 </div>
                             </div>
                         </div>
@@ -211,53 +219,54 @@ export default function CreatorProfilePage() {
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
                                         <Mail className="w-5 h-5" />
                                     </div>
-                                    <span className="text-sm font-medium">{CREATOR_DATA.email}</span>
+                                    <span className="text-sm font-medium">{displayData.email}</span>
                                 </div>
-                                <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                                        <Instagram className="w-5 h-5" />
+                                {displayData.socials.instagram && (
+                                    <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                                            <Instagram className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-sm font-medium">{displayData.socials.instagram}</span>
                                     </div>
-                                    <span className="text-sm font-medium">{CREATOR_DATA.socials.instagram}</span>
-                                </div>
-                                <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                                        <Facebook className="w-5 h-5" />
+                                )}
+                                {displayData.socials.facebook && (
+                                    <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                                            <Facebook className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-sm font-medium">{displayData.socials.facebook}</span>
                                     </div>
-                                    <span className="text-sm font-medium">{CREATOR_DATA.socials.facebook}</span>
-                                </div>
-                                <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
-                                    <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
-                                        <Twitter className="w-5 h-5" />
+                                )}
+                                {displayData.socials.twitter && (
+                                    <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
+                                            <Twitter className="w-5 h-5" />
+                                        </div>
+                                        <span className="text-sm font-medium">{displayData.socials.twitter}</span>
                                     </div>
-                                    <span className="text-sm font-medium">{CREATOR_DATA.socials.twitter}</span>
-                                </div>
+                                )}
                                 <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
                                     <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/5 transition-colors">
                                         <MapPin className="w-5 h-5" />
                                     </div>
-                                    <span className="text-sm font-medium">{CREATOR_DATA.locationDetails}</span>
+                                    <span className="text-sm font-medium">{displayData.locationDetails}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Pricing Details */}
                         <div className="pt-6 border-t border-slate-50">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-600">${CREATOR_DATA.pricing.hourly} - hr</span>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <DollarSign className="w-4 h-4 text-slate-400" />
+                                        <span className="text-sm font-medium text-slate-600">Starting Rate</span>
+                                    </div>
+                                    <span className="text-md font-bold text-slate-900">{displayData.pricing.currency} {displayData.pricing.hourly.toLocaleString()} / hr</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-600">${CREATOR_DATA.pricing.fixed} - Fixed Price</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <DollarSign className="w-4 h-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-600">${CREATOR_DATA.pricing.project} - Project</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Briefcase className="w-4 h-4 text-slate-400" />
-                                    <span className="text-sm font-medium text-slate-600">Joined March 12, 2025</span>
+                                    <Calendar className="w-4 h-4 text-slate-400" />
+                                    <span className="text-sm font-medium text-slate-600">Joined {displayData.joinedDate}</span>
                                 </div>
                             </div>
                         </div>
@@ -275,47 +284,139 @@ export default function CreatorProfilePage() {
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6">
                         <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
                         <p className="text-slate-600 leading-relaxed font-medium">
-                            {CREATOR_DATA.overview}
+                            {displayData.overview}
                         </p>
+
+                        {displayData.specializations.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {displayData.specializations.map((spec: string) => (
+                                    <span key={spec} className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs font-semibold uppercase tracking-wider border border-slate-100">
+                                        {spec}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </section>
+
+                    {/* Equipment section */}
+                    {displayData.equipment.length > 0 && (
+                        <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6">
+                            <h2 className="text-xl font-semibold text-slate-900">Professional Gear</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {displayData.equipment.map((item: any, i: number) => (
+                                    <div key={i} className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                                            {displayData.role === "Photographer" ? <Camera className="w-5 h-5 text-primary" /> : <Video className="w-5 h-5 text-primary" />}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{item.brand || "Professional"}</p>
+                                            <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* External Links Section */}
+                    {displayData.externalLinks.length > 0 && (
+                        <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
+                            <h2 className="text-xl font-semibold text-slate-900">External Works & Links</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {displayData.externalLinks.map((link: any) => (
+                                    <a
+                                        key={link.id}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-100 transition-all group"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm group-hover:scale-110 transition-transform">
+                                            <Share2 className="w-6 h-6 text-primary" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-slate-900 truncate">{link.title}</h4>
+                                            <p className="text-xs text-slate-500 font-medium truncate">{link.description}</p>
+                                        </div>
+                                        <div className="text-slate-300 group-hover:text-primary transition-colors">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
+                        </section>
+                    )}
 
                     {/* Portfolio */}
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                         <div className="flex items-center justify-between">
                             <h2 className="text-xl font-semibold text-slate-900">Portfolio</h2>
-                            <button className="text-sm font-semibold text-primary hover:underline">View all work</button>
+                            {displayData.portfolio.length > 6 && (
+                                <button className="text-sm font-semibold text-primary hover:underline">View all work</button>
+                            )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {CREATOR_DATA.portfolio.map((item, index) => (
-                                <div 
-                                    key={item.id} 
-                                    onClick={() => {
-                                        setSelectedProjectIndex(index);
-                                        setCurrentImageIndex(0);
-                                    }}
-                                    className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
-                                >
-                                    <NextImage
-                                        src={item.images[0]}
-                                        alt={item.title}
-                                        fill
-                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <h3 className="text-white font-semibold text-lg">{item.title}</h3>
-                                            <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full text-white backdrop-blur-sm">
-                                                {item.images.length} images
-                                            </span>
+                        {displayData.portfolio.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {displayData.portfolio.map((project: any, index: number) => {
+                                    const coverItem = project.items[0];
+                                    return (
+                                        <div
+                                            key={project.id}
+                                            onClick={() => {
+                                                setSelectedProjectIndex(index);
+                                                setCurrentImageIndex(0);
+                                            }}
+                                            className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
+                                        >
+                                            {coverItem.type === 'VIDEO' ? (
+                                                <div className="relative w-full h-full">
+                                                    <video
+                                                        src={coverItem.url}
+                                                        className="w-full h-full object-cover"
+                                                        muted
+                                                        loop
+                                                        playsInline
+                                                    />
+                                                    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center">
+                                                        <Video className="w-5 h-5 text-white" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <NextImage
+                                                    src={coverItem.url}
+                                                    alt={project.title}
+                                                    fill
+                                                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                                />
+                                            )}
+
+                                            {/* Multi-item Badge */}
+                                            {project.items.length > 1 && (
+                                                <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 flex items-center gap-2 z-10">
+                                                    <Camera className="w-3.5 h-3.5 text-white" />
+                                                    <span className="text-[11px] font-bold text-white leading-none">{project.items.length} Files</span>
+                                                </div>
+                                            )}
+
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h3 className="text-white font-semibold text-lg">{project.title}</h3>
+                                                </div>
+                                                <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
+                                                    {project.description}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
-                                            {item.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="py-20 flex flex-col items-center justify-center bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                                <Briefcase className="w-12 h-12 text-slate-200 mb-4" />
+                                <p className="text-slate-400 font-medium text-sm">No portfolio items uploaded yet.</p>
+                            </div>
+                        )}
                     </section>
 
                     {/* Reviews */}
@@ -323,77 +424,68 @@ export default function CreatorProfilePage() {
                         <div className="flex items-center gap-4 pb-4 border-b border-slate-50">
                             <div className="flex items-center gap-2">
                                 <Star className="w-6 h-6 fill-yellow-500 text-yellow-500" />
-                                <span className="text-2xl font-semibold text-slate-900">{CREATOR_DATA.rating}</span>
+                                <span className="text-2xl font-semibold text-slate-900">{displayData.rating.toFixed(1)}</span>
                             </div>
                             <span className="text-slate-200">|</span>
-                            <span className="text-xl font-semibold text-slate-700">{CREATOR_DATA.reviewsCount} Reviews</span>
+                            <span className="text-xl font-semibold text-slate-700">{displayData.reviewsCount} Reviews</span>
                         </div>
 
-                        <div className="space-y-6">
-                            {CREATOR_DATA.reviews.map((review) => (
-                                <div key={review.id} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden relative">
-                                                <NextImage
-                                                    src={review.avatar}
-                                                    alt={review.user}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-semibold text-slate-900">{review.user}</h4>
-                                                <div className="flex items-center gap-2 mt-0.5">
-                                                    <div className="w-4 h-3 relative rounded-sm overflow-hidden border border-slate-200">
-                                                        <NextImage
-                                                            src="https://flagcdn.com/w40/rw.png"
-                                                            alt="Rwanda"
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    </div>
+                        {displayData.reviews.length > 0 ? (
+                            <div className="space-y-6">
+                                {displayData.reviews.map((review: any) => (
+                                    <div key={review.id} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden relative">
+                                                    <NextImage
+                                                        src={review.avatar}
+                                                        alt={review.user}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-semibold text-slate-900">{review.user}</h4>
                                                     <p className="text-[11px] font-medium text-slate-500">{review.location} • {review.date}</p>
                                                 </div>
                                             </div>
+                                            <div className="flex items-center gap-1">
+                                                {[...Array(5)].map((_, i) => (
+                                                    <Star key={i} className={`w-4 h-4 ${i < Math.floor(review.rating) ? "fill-yellow-500 text-yellow-500" : "fill-slate-200 text-slate-200"}`} />
+                                                ))}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            {[...Array(5)].map((_, i) => (
-                                                <Star key={i} className={`w-4 h-4 ${i < Math.floor(review.rating) ? "fill-yellow-500 text-yellow-500" : "fill-slate-200 text-slate-200"}`} />
-                                            ))}
-                                        </div>
+                                        <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                            {review.comment}
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                                        {review.comment}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="flex justify-center pt-4">
-                            <button className="px-10 h-12 border-2 border-primary/10 text-primary rounded-xl font-semibold text-sm hover:bg-primary/5 transition-all outline-none">
-                                Show all Reviews
-                            </button>
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-20 flex flex-col items-center justify-center">
+                                <Star className="w-12 h-12 text-slate-100 mb-4" />
+                                <p className="text-slate-400 font-medium text-sm">No reviews yet for this creator.</p>
+                            </div>
+                        )}
                     </section>
                 </div>
             </div>
 
             {/* Portfolio Project Gallery Lightbox */}
-            {selectedProjectIndex !== null && (
-                <div 
-                    className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300"
+            {selectedProjectIndex !== null && displayData && displayData.portfolio[selectedProjectIndex] && (
+                <div
+                    className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300"
                     onClick={() => setSelectedProjectIndex(null)}
                 >
                     {/* Header: Title & Close */}
                     <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
                         <div className="flex flex-col">
-                            <h3 className="text-white text-2xl font-semibold">{CREATOR_DATA.portfolio[selectedProjectIndex].title}</h3>
+                            <h3 className="text-white text-2xl font-semibold">{displayData.portfolio[selectedProjectIndex].title}</h3>
                             <p className="text-white/50 text-sm font-medium">
-                                Image {currentImageIndex + 1} of {CREATOR_DATA.portfolio[selectedProjectIndex].images.length}
+                                {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.title || "Work Sample"} • Item {currentImageIndex + 1} of {displayData.portfolio[selectedProjectIndex].items.length}
                             </p>
                         </div>
-                        <button 
+                        <button
                             className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
                             onClick={(e) => { e.stopPropagation(); setSelectedProjectIndex(null); }}
                         >
@@ -403,50 +495,43 @@ export default function CreatorProfilePage() {
 
                     {/* Main Carousel Area */}
                     <div className="relative w-full h-[60vh] flex items-center justify-center gap-8 px-4" onClick={(e) => e.stopPropagation()}>
-                        {/* Navigation Arrows */}
-                        <button 
-                            className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
-                            onClick={prevImage}
-                        >
-                            <ChevronLeft className="w-8 h-8" />
-                        </button>
+                        {/* Navigation Arrows (Only if more than one image) */}
+                        {displayData.portfolio[selectedProjectIndex].items.length > 1 && (
+                            <>
+                                <button
+                                    className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                                    onClick={prevImage}
+                                >
+                                    <ChevronLeft className="w-8 h-8" />
+                                </button>
 
-                        <button 
-                            className="absolute right-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
-                            onClick={nextImage}
-                        >
-                            <ChevronRight className="w-8 h-8" />
-                        </button>
+                                <button
+                                    className="absolute right-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
+                                    onClick={nextImage}
+                                >
+                                    <ChevronRight className="w-8 h-8" />
+                                </button>
+                            </>
+                        )}
 
-                        {/* Neighbor Hint: Previous */}
-                        <div className="hidden lg:block w-[15%] h-[70%] opacity-30 grayscale blur-[2px] rounded-2xl overflow-hidden transition-all duration-500 scale-90">
-                             <NextImage
-                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[(currentImageIndex - 1 + CREATOR_DATA.portfolio[selectedProjectIndex].images.length) % CREATOR_DATA.portfolio[selectedProjectIndex].images.length]}
-                                alt="Previous"
-                                fill
-                                className="object-cover"
-                            />
-                        </div>
-
-                        {/* Active Image */}
+                        {/* Active Content */}
                         <div className="relative w-full lg:w-[60%] h-full rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-                            <NextImage
-                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[currentImageIndex]}
-                                alt={CREATOR_DATA.portfolio[selectedProjectIndex].title}
-                                fill
-                                className="object-cover"
-                                priority
-                            />
-                        </div>
-
-                        {/* Neighbor Hint: Next */}
-                        <div className="hidden lg:block w-[15%] h-[70%] opacity-30 grayscale blur-[2px] rounded-2xl overflow-hidden transition-all duration-500 scale-90">
-                             <NextImage
-                                src={CREATOR_DATA.portfolio[selectedProjectIndex].images[(currentImageIndex + 1) % CREATOR_DATA.portfolio[selectedProjectIndex].images.length]}
-                                alt="Next"
-                                fill
-                                className="object-cover"
-                            />
+                            {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.type === 'VIDEO' ? (
+                                <video 
+                                    src={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].url}
+                                    className="w-full h-full object-contain"
+                                    controls
+                                    autoPlay
+                                />
+                            ) : (
+                                <NextImage
+                                    src={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].url}
+                                    alt={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].title}
+                                    fill
+                                    className="object-contain"
+                                    priority
+                                />
+                            )}
                         </div>
                     </div>
 
@@ -454,19 +539,21 @@ export default function CreatorProfilePage() {
                     <div className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-8 px-8" onClick={(e) => e.stopPropagation()}>
                         <div className="max-w-3xl text-center">
                             <p className="text-white/80 text-lg leading-relaxed font-medium line-clamp-2">
-                                {CREATOR_DATA.portfolio[selectedProjectIndex].description}
+                                {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.description}
                             </p>
                         </div>
-                        
-                        <div className="flex gap-2">
-                            {CREATOR_DATA.portfolio[selectedProjectIndex].images.map((_, index) => (
-                                <button
-                                    key={index}
-                                    onClick={() => setCurrentImageIndex(index)}
-                                    className={`transition-all duration-500 rounded-full ${index === currentImageIndex ? "w-10 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"}`}
-                                />
-                            ))}
-                        </div>
+
+                        {displayData.portfolio[selectedProjectIndex].items.length > 1 && (
+                            <div className="flex gap-2">
+                                {displayData.portfolio[selectedProjectIndex].items.map((_: any, index: number) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => setCurrentImageIndex(index)}
+                                        className={`transition-all duration-500 rounded-full ${index === currentImageIndex ? "w-10 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-white/20 hover:bg-white/40"}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

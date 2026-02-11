@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
       {
+        protocol:"https",
+        hostname:"dushimire.neurolab.cc"
+      },
+      {
         protocol: "https",
         hostname: "www.svgrepo.com",
       },
@@ -18,6 +22,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "lmxlewtqozioqptzngkl.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "ui-avatars.com",
       },
     ],
   },

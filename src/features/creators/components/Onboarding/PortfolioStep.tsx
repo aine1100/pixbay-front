@@ -26,10 +26,20 @@ interface PortfolioSample {
 export function PortfolioStep({ onNext, onBack }: PortfolioStepProps) {
     const [samples, setSamples] = useState<PortfolioSample[]>([]);
     const [linkInput, setLinkInput] = useState("");
+    const [title, setTitle] = useState("");
+    const [explanation, setExplanation] = useState("");
     const [isUploading, setIsUploading] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
+            const currentFilesCount = samples.filter(s => s.file).length;
+            const newFilesCount = e.target.files.length;
+
+            if (currentFilesCount + newFilesCount > 10) {
+                toast.error("You can add a maximum of 10 files per project.");
+                return;
+            }
+
             const newFiles = Array.from(e.target.files);
             const newSamples = newFiles.map((file): PortfolioSample => {
                 let type: SampleType = "document";
@@ -73,13 +83,24 @@ export function PortfolioStep({ onNext, onBack }: PortfolioStepProps) {
             toast.error("Please add at least one portfolio item.");
             return;
         }
+
+        if (!title.trim()) {
+            toast.error("Please provide a title for this project.");
+            return;
+        }
+
         setIsUploading(true);
         try {
             const links = samples.filter(s => s.type === "link" && s.url).map(s => s.url!);
             const files = samples.filter(s => s.file).map(s => s.file!);
             
-            await creatorService.submitPortfolio({ links, files });
-            toast.success("Portfolio updated successfully!");
+            await creatorService.submitPortfolio({ 
+                links, 
+                files,
+                title: title.trim(),
+                explanation: explanation.trim()
+            });
+            toast.success("Project added successfully!");
             onNext({ portfolio: samples });
         } catch (error: any) {
             toast.error(error.message || "Failed to update portfolio.");
@@ -89,36 +110,57 @@ export function PortfolioStep({ onNext, onBack }: PortfolioStepProps) {
     };
 
     return (
-        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="w-full animate-in fade-in slide-in-from-bottom-4 duration-300 text-left">
             <div className="mb-6">
                 <h2 className="text-xl font-semibold text-slate-900 mb-1">Showcase your Portfolio</h2>
                 <p className="text-slate-500 text-xs leading-relaxed">
                     Upload samples (Images, Videos, PDFs) or add links to your work.
                     <span className="block mt-0.5 font-medium text-slate-400">
-                        (Minimum 3 samples recommended)
+                        (Maximum 10 files per project)
                     </span>
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
+                {/* Project Info Section */}
+                <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 text-left block">Project Title</label>
+                        <Input
+                            placeholder="e.g. Wedding Shoot 2024, Product Campaign"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="h-10 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20"
+                        />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 text-left block">Explanation / Description (Optional)</label>
+                        <textarea
+                            placeholder="Describe your work, tools used, or the project context..."
+                            value={explanation}
+                            onChange={(e) => setExplanation(e.target.value)}
+                            className="w-full min-h-[80px] p-4 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 resize-none placeholder:text-slate-400 outline-none transition-all"
+                        />
+                    </div>
+                </div>
+
                 {/* Link Input Section */}
                 <div className="flex items-center gap-3">
-                    <label className="text-[11px] font-semibold text-slate-700 whitespace-nowrap">Link</label>
                     <div className="relative flex-1">
                         <Input
-                            placeholder="e.g. Behance URL"
+                            placeholder="Add project link (e.g. Behance, Personal Site)"
                             value={linkInput}
                             onChange={(e) => setLinkInput(e.target.value)}
-                            className="h-9 bg-slate-50 border-none rounded-lg text-[13px] pl-9 focus:ring-2 focus:ring-primary/20"
+                            className="h-10 bg-slate-50 border-none rounded-xl text-[13px] pl-9 focus:ring-2 focus:ring-primary/20"
                         />
-                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     </div>
                     <Button 
                         onClick={addLink}
                         disabled={!linkInput.trim()}
-                        className="h-9 rounded-lg bg-primary text-white px-5 text-sm font-semibold transition-all"
+                        className="h-10 rounded-xl bg-primary text-white px-5 text-sm font-semibold transition-all"
                     >
-                        Add
+                        Add Link
                     </Button>
                 </div>
 

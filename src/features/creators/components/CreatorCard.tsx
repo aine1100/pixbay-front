@@ -32,13 +32,12 @@ export function CreatorCard({
     return (
         <div className="bg-white rounded-[32px] border border-slate-100 p-6 group relative hover:border-primary/20 transition-all flex flex-col md:flex-row gap-8">
             {/* Profile Image - Square */}
-            <div className="w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-100">
+            <div className="w-32 h-32 rounded-2xl overflow-hidden flex-shrink-0 bg-slate-100 border border-slate-100 relative">
                 <NextImage
-                    src={avatar}
+                    src={avatar && avatar.startsWith('http') && avatar !== 'https://dushimire.neurolab.cc/' ? avatar : `https://ui-avatars.com/api/?name=${name.replace(' ', '+')}&background=random`}
                     alt={name}
-                    width={128}
-                    height={128}
-                    className="object-cover w-full h-full"
+                    fill
+                    className="object-cover"
                 />
             </div>
 

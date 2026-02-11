@@ -25,6 +25,8 @@ interface PortfolioSample {
 export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
     const [samples, setSamples] = useState<PortfolioSample[]>([]);
     const [linkInput, setLinkInput] = useState("");
+    const [title, setTitle] = useState("");
+    const [explanation, setExplanation] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const queryClient = useQueryClient();
 
@@ -32,6 +34,14 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
+            const currentFilesCount = samples.filter(s => s.file).length;
+            const newFilesCount = e.target.files.length;
+
+            if (currentFilesCount + newFilesCount > 10) {
+                toast.error("You can add a maximum of 10 files per project.");
+                return;
+            }
+
             const newFiles = Array.from(e.target.files);
             const newSamples = newFiles.map((file): PortfolioSample => {
                 let type: SampleType = "document";
@@ -76,18 +86,30 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
             return;
         }
 
+        if (!title.trim()) {
+            toast.error("Please provide a title for this project.");
+            return;
+        }
+
         setIsUploading(true);
         try {
             const links = samples.filter(s => s.type === "link" && s.url).map(s => s.url!);
             const files = samples.filter(s => s.file).map(s => s.file!);
 
-            await creatorService.submitPortfolio({ links, files });
+            await creatorService.submitPortfolio({ 
+                links, 
+                files,
+                title: title.trim(),
+                explanation: explanation.trim()
+            });
 
             // Invalidate query to refresh the list
             queryClient.invalidateQueries({ queryKey: ["user", "me"] });
 
-            toast.success("Work added successfully!");
+            toast.success("Project added successfully!");
             setSamples([]);
+            setTitle("");
+            setExplanation("");
             onClose();
         } catch (error: any) {
             toast.error(error.message || "Failed to upload.");
@@ -105,8 +127,8 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Add New Work</h2>
-                        <p className="text-sm text-slate-500">Upload files or add links to your portfolio</p>
+                        <h2 className="text-lg font-semibold text-slate-900">Add New Project</h2>
+                        <p className="text-sm text-slate-500">Group multiple images/videos into a single professional work</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -117,7 +139,28 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-6">
+                <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    {/* Project Information */}
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Project Title</label>
+                            <Input
+                                placeholder="e.g. Wedding Shoot 2024, Product Campaign"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="h-11 bg-slate-50 border-transparent hover:bg-slate-100 focus:bg-white transition-all rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Explanation / Description</label>
+                            <textarea
+                                placeholder="Describe the project goals, your role, or any interesting details..."
+                                value={explanation}
+                                onChange={(e) => setExplanation(e.target.value)}
+                                className="w-full min-h-[100px] p-4 bg-slate-50 border-transparent hover:bg-slate-100 focus:bg-white transition-all rounded-xl text-sm outline-none focus:ring-1 focus:ring-primary/20"
+                            />
+                        </div>
+                    </div>
                     {/* Link Input Section */}
                     <div className="flex items-center gap-3">
                         <div className="relative flex-1">
