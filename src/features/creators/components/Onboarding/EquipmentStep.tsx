@@ -5,8 +5,10 @@ import { Camera, Plus, Trash2, Monitor, Mic, Lightbulb, Package } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
 import { ModernSelect } from "@/components/ui/modern-select";
+import { creatorService } from "../../services/creator.service";
+import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 interface EquipmentStepProps {
     onComplete: (data: any) => void;
@@ -23,6 +25,7 @@ interface EquipmentItem {
 const CATEGORIES = ["Camera", "Lens", "Lighting", "Audio", "Support", "Other"];
 
 export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
+    const router = useRouter();
     const [equipment, setEquipment] = useState<EquipmentItem[]>([
         { id: "1", name: "", category: "Camera", quantity: 1 }
     ]);
@@ -40,7 +43,7 @@ export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
         setEquipment((prev) => prev.filter((item) => item.id !== id));
     };
 
-    const updateEquipment = (id: string, field: keyof EquipmentItem, value: any) => {
+    const updateEquipmentField = (id: string, field: keyof EquipmentItem, value: any) => {
         setEquipment((prev) =>
             prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
         );
@@ -48,12 +51,22 @@ export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
 
     const handleSubmit = async () => {
         const isValid = equipment.every(item => item.name.trim() !== "");
-        if (!isValid) return;
+        if (!isValid) {
+            toast.error("Please fill in all equipment names.");
+            return;
+        }
 
         setIsSubmitting(true);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setIsSubmitting(false);
-        onComplete({ equipmentList: equipment });
+        try {
+            await creatorService.submitEquipment(equipment);
+            toast.success("Professional profile data submitted successfully!");
+            onComplete({ equipmentList: equipment });
+            router.push("/creator");
+        } catch (error: any) {
+            toast.error(error.message || "Failed to complete activation.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const getCategoryIcon = (category: string) => {
@@ -88,7 +101,7 @@ export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Category</label>
                                 <ModernSelect
                                     value={item.category}
-                                    onChange={(val) => updateEquipment(item.id, "category", val)}
+                                    onChange={(val) => updateEquipmentField(item.id, "category", val)}
                                     options={CATEGORIES}
                                     icon={getCategoryIcon(item.category)}
                                 />
@@ -100,7 +113,7 @@ export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
                                 <Input
                                     placeholder="e.g. Sony A7R IV"
                                     value={item.name}
-                                    onChange={(e) => updateEquipment(item.id, "name", e.target.value)}
+                                    onChange={(e) => updateEquipmentField(item.id, "name", e.target.value)}
                                     className="h-10 bg-slate-50 border-none rounded-xl text-[13px] font-medium placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
@@ -112,7 +125,7 @@ export function EquipmentStep({ onComplete, onBack }: EquipmentStepProps) {
                                     type="number"
                                     min="1"
                                     value={item.quantity}
-                                    onChange={(e) => updateEquipment(item.id, "quantity", parseInt(e.target.value))}
+                                    onChange={(e) => updateEquipmentField(item.id, "quantity", parseInt(e.target.value))}
                                     className="h-10 bg-slate-50 border-none rounded-xl text-[13px] font-medium focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>

@@ -12,13 +12,17 @@ import { authStorage } from "@/lib/auth-storage";
 
 import { useUserStore } from "@/features/user/store/userStore";
 
+import { CompleteProfileModal } from "@/features/creators/components/Dashboard/CompleteProfileModal";
+
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [showCompleteProfile, setShowCompleteProfile] = useState(false);
     
     // Global user state (from token initially)
     const { user: storeUser } = useUserStore();
@@ -27,15 +31,27 @@ export default function DashboardLayout({
     const { data: profileUser, isLoading: isProfileLoading, isError } = useProfile();
 
     useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Check for incomplete profile
+    useEffect(() => {
+        if (profileUser?.role === 'CREATOR' && 
+            profileUser?.creatorProfile?.verificationStatus === 'APPROVED' &&
+            (profileUser?.creatorProfile?.bio === 'Pending activation' || !profileUser?.creatorProfile?.businessName)) {
+            setShowCompleteProfile(true);
+        }
+    }, [profileUser]);
+
+    // ... existing useEffect ...
+
+    useEffect(() => {
         const checkAuth = () => {
             const accessToken = localStorage.getItem("pixbay_access_token");
             const refreshToken = localStorage.getItem("pixbay_refresh_token");
             
             const isAccessExpired = !accessToken || authStorage.isTokenExpired();
             
-            // For refresh token, we don't have a decoder yet but we know it's in localStorage
-            // If access is expired AND there's no refresh token, THEN we log out.
-            // If access is expired but refresh exists, the next API call will attempt to renew.
             if (isAccessExpired && !refreshToken) {
                 console.warn("Session expired and no refresh token found. Logging out...");
                 localStorage.removeItem("pixbay_access_token");
@@ -44,16 +60,14 @@ export default function DashboardLayout({
             }
         };
 
-        // Check immediately
         checkAuth();
-
-        // Check periodically (every minute)
         const interval = setInterval(checkAuth, 60 * 1000);
         return () => clearInterval(interval);
     }, [router]);
 
     // Only show full-screen loading if we don't even have a token user
-    if (isProfileLoading && !storeUser) {
+    // We also check !mounted to prevent hydration mismatch since storeUser is available immediately on client but not server
+    if (!mounted || (isProfileLoading && !storeUser)) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-white">
                 <Loading size="lg" />
@@ -156,6 +170,8 @@ export default function DashboardLayout({
                     {children}
                 </main>
             </div>
+            
+            <CompleteProfileModal isOpen={showCompleteProfile} onOpenChange={setShowCompleteProfile} />
         </div>
     );
 }

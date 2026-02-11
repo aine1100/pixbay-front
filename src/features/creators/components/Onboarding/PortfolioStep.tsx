@@ -5,6 +5,8 @@ import { Upload, X, Image as ImageIcon, Video, CheckCircle2, Plus, Link as LinkI
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { creatorService } from "../../services/creator.service";
+import { toast } from "react-hot-toast";
 
 interface PortfolioStepProps {
     onNext: (data: any) => void;
@@ -67,11 +69,23 @@ export function PortfolioStep({ onNext, onBack }: PortfolioStepProps) {
     };
 
     const handleSubmit = async () => {
-        if (samples.length === 0) return;
+        if (samples.length === 0) {
+            toast.error("Please add at least one portfolio item.");
+            return;
+        }
         setIsUploading(true);
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setIsUploading(false);
-        onNext({ portfolioSamples: samples });
+        try {
+            const links = samples.filter(s => s.type === "link" && s.url).map(s => s.url!);
+            const files = samples.filter(s => s.file).map(s => s.file!);
+            
+            await creatorService.submitPortfolio({ links, files });
+            toast.success("Portfolio updated successfully!");
+            onNext({ portfolio: samples });
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update portfolio.");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (

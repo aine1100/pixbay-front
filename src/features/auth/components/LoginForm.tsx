@@ -51,9 +51,16 @@ export function LoginForm() {
             if (role === "CLIENT") {
                 router.push("/client");
             } else if (role === "CREATOR") {
-                // Creator portal not yet implemented, redirect to /client for now
-                toast.success("Welcome, Creator! Redirecting to dashboard...");
-                router.push("/client");
+                const profile = authData.user?.creatorProfile;
+                const isComplete = profile?.verificationStatus === "APPROVED";
+
+                if (!isComplete) {
+                    toast.success("Welcome, Creator! Let's finish your profile.");
+                    router.push("/creator-onboarding");
+                } else {
+                    toast.success("Welcome back to your dashboard!");
+                    router.push("/creator");
+                }
             } else {
                 router.push("/client");
             }

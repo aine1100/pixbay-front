@@ -57,11 +57,8 @@ export default function CreatorOnboardingPage() {
     };
 
     const handleComplete = (finalData: any) => {
-        const completeData = { ...onboardingData, ...finalData };
-        console.log("Onboarding Complete:", completeData);
-        toast.success("Professional profile submitted for review!");
-        // Redirect to creator dashboard (or verification in progress page)
-        router.push("/client"); // Default for now
+        // EquipmentStep already handles the final submission and redirection
+        console.log("Onboarding Complete:", finalData);
     };
 
     return (

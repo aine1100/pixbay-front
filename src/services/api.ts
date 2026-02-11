@@ -11,26 +11,29 @@ export const api = {
     },
 
     async post(endpoint: string, body: unknown, options: CustomRequestInit = {}) {
+        const isFormData = body instanceof FormData;
         return this.request(endpoint, {
             ...options,
             method: 'POST',
-            body: JSON.stringify(body),
+            body: isFormData ? body : JSON.stringify(body),
         });
     },
 
     async put(endpoint: string, body: unknown, options: CustomRequestInit = {}) {
+        const isFormData = body instanceof FormData;
         return this.request(endpoint, {
             ...options,
             method: 'PUT',
-            body: JSON.stringify(body),
+            body: isFormData ? body : JSON.stringify(body),
         });
     },
 
     async patch(endpoint: string, body: unknown, options: CustomRequestInit = {}) {
+        const isFormData = body instanceof FormData;
         return this.request(endpoint, {
             ...options,
             method: 'PATCH',
-            body: JSON.stringify(body),
+            body: isFormData ? body : JSON.stringify(body),
         });
     },
 
@@ -59,14 +62,20 @@ export const api = {
             }
         }
 
-        console.log(`[API Request] ${options.method || 'GET'} ${url}`, options.body ? JSON.parse(options.body as string) : "");
+        // Only log body if it's NOT FormData (otherwise it might log binary or large objects)
+        const bodyLog = options.body instanceof FormData ? "[FormData]" : (options.body ? JSON.parse(options.body as string) : "");
+        console.log(`[API Request] ${options.method || 'GET'} ${url}`, bodyLog);
 
         const accessToken = typeof window !== "undefined" ? localStorage.getItem("pixbay_access_token") : null;
 
         const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
             ...options.headers as Record<string, string>,
         };
+
+        // Automatic Content-Type handling
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
 
         if (accessToken) {
             headers['Authorization'] = `Bearer ${accessToken}`;
@@ -117,7 +126,7 @@ export const api = {
                         window.location.href = "/login?expired=true";
                     }
                 }
-                throw new Error("Session expired. Please log in again.");
+                // throw new Error("Session expired. Please log in again.");
             }
 
             if (!response.ok) {

@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import { Upload, X, FileText, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { creatorService } from "../../services/creator.service";
+import { toast } from "react-hot-toast";
+import { Loading } from "@/components/ui/loading";
+import { Input } from "@/components/ui/input";
 
 interface IdentityStepProps {
     onNext: (data: any) => void;
@@ -15,6 +19,8 @@ export function IdentityStep({ onNext, onBack }: IdentityStepProps) {
         front: null,
         back: null,
     });
+    const [nationalId, setNationalId] = useState("");
+    const [country, setCountry] = useState("Rwanda");
     const [isUploading, setIsUploading] = useState(false);
 
     const handleFileChange = (side: "front" | "back") => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,12 +34,25 @@ export function IdentityStep({ onNext, onBack }: IdentityStepProps) {
     };
 
     const handleSubmit = async () => {
-        if (!files.front || !files.back) return;
+        if (!files.front || !files.back || !nationalId || !country) {
+            toast.error("Please fill in all identity details.");
+            return;
+        }
         setIsUploading(true);
-        // Simulate upload delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        setIsUploading(false);
-        onNext({ identityDocuments: files });
+        try {
+            await creatorService.submitIdentity({
+                nationalId,
+                country,
+                idFront: files.front,
+                idBack: files.back
+            });
+            toast.success("Identity documents submitted successfully!");
+            onNext({ identity: { nationalId, country } });
+        } catch (error: any) {
+            toast.error(error.message || "Failed to submit identity documents.");
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -42,13 +61,32 @@ export function IdentityStep({ onNext, onBack }: IdentityStepProps) {
                 <h2 className="text-xl font-semibold text-slate-900 mb-1">Verify your Identity</h2>
                 <p className="text-slate-500 text-xs leading-relaxed">
                     Please upload your identity card from an authorized ID issuer body from your country.
-                    <span className="block mt-0.5 font-medium text-slate-400">
-                        (You are required to upload the front and back of the card)
-                    </span>
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
+                {/* ID Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <label className="text-[12px] font-semibold text-slate-700">National ID Number</label>
+                        <Input
+                            placeholder="Enter ID Number"
+                            value={nationalId}
+                            onChange={(e) => setNationalId(e.target.value)}
+                            className="h-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[12px] font-semibold text-slate-700">Country of Issue</label>
+                        <Input
+                            placeholder="e.g. Rwanda"
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            className="h-10 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-primary/20"
+                        />
+                    </div>
+                </div>
+
                 {/* Upload Box Container */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {(["front", "back"] as const).map((side) => (
@@ -139,10 +177,10 @@ export function IdentityStep({ onNext, onBack }: IdentityStepProps) {
                         </Button>
                         <Button
                             onClick={handleSubmit}
-                            disabled={!files.front || !files.back || isUploading}
+                            disabled={!files.front || !files.back || !nationalId || isUploading}
                             className="rounded-[20px] bg-[#FF9B9B] hover:bg-[#FF8A8A] text-white font-semibold h-12 px-12 text-[15px] transition-all border-none"
                         >
-                            {isUploading ? "Uploading..." : "Next Step"}
+                            {isUploading ? <Loading size="sm" /> : "Next Step"}
                         </Button>
                     </div>
                 </div>

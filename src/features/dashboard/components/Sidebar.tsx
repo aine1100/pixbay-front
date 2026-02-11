@@ -62,7 +62,7 @@ export function Sidebar() {
     return (
         <div className="flex flex-col h-full bg-white">
             <div className="flex items-center gap-3 px-8 h-20">
-                <span className="text-xl font-semibold text-slate-900 underline decoration-primary decoration-4 underline-offset-8">Pixbay</span>
+                <span className="text-xl font-semibold text-slate-900 ">Pixbay</span>
             </div>
 
             <div className="flex-1 px-4 py-4 space-y-8 overflow-y-auto custom-scrollbar">
@@ -86,7 +86,7 @@ export function Sidebar() {
                                     )}
                                 >
                                     <div className="flex items-center gap-4">
-                                        <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-900")} />
+                                        <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-600 group-hover:text-slate-900")} />
                                         <span className="text-[14px] font-semibold">{item.label}</span>
                                     </div>
                                     {item.badge && (
@@ -118,7 +118,7 @@ export function Sidebar() {
                                             : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                                     )}
                                 >
-                                    <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-400 group-hover:text-slate-900")} />
+                                    <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-600 group-hover:text-slate-900")} />
                                     <span className="text-[14px] font-semibold">{item.label}</span>
                                 </Link>
                             );
@@ -127,7 +127,7 @@ export function Sidebar() {
                             onClick={handleLogout}
                             className="w-full group flex items-center gap-4 px-4 h-12 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all text-left mt-4"
                         >
-                            <LogOut className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                            <LogOut className="w-5 h-5 text-slate-600 group-hover:text-primary transition-colors" />
                             <span className="text-[14px] font-semibold">Logout</span>
                         </button>
                     </nav>

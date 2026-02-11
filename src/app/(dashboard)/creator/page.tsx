@@ -18,13 +18,47 @@ export default function CreatorDashboardPage() {
     
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
-            {/* Approval Banner */}
-            <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-xl p-4 flex items-center justify-center gap-3">
-                <span className="text-[14px] text-[#A27300] font-medium flex items-center gap-2">
-                    <span className="text-lg">🌟</span>
-                    Your account has been officially approved. It&apos;s your time to shine
-                </span>
-            </div>
+            {/* Dynamic Status Banners */}
+            {(() => {
+                const creator = user?.creatorProfile;
+                const status = creator?.verificationStatus;
+                const isVerified = creator?.isVerified || false;
+
+                if (status === "APPROVED" || isVerified) {
+                    return (
+                        <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
+                            <span className="text-[14px] text-[#A27300] font-medium flex items-center gap-2">
+                                <span className="text-lg">🌟</span>
+                                Your account has been officially approved. It&apos;s your time to shine
+                            </span>
+                        </div>
+                    );
+                }
+
+                if (status === "PENDING" || !status) {
+                    return (
+                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
+                            <span className="text-[14px] text-blue-600 font-medium flex items-center gap-2">
+                                <span className="text-lg">⏳</span>
+                                Your profile is currently under review by our team. We&apos;ll notify you once you&apos;re verified.
+                            </span>
+                        </div>
+                    );
+                }
+
+                if (status === "REJECTED") {
+                    return (
+                        <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
+                            <span className="text-[14px] text-red-600 font-medium flex items-center gap-2">
+                                <span className="text-lg">⚠️</span>
+                                Your verification was not successful. Please check your email or contact support for more details.
+                            </span>
+                        </div>
+                    );
+                }
+
+                return null;
+            })()}
 
             {/* Welcome Hero */}
             <WelcomeHero firstName={user?.firstName || "Creator"} />
