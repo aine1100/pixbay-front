@@ -135,7 +135,6 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                 </div>
             )}
 
-            {/* Links and Documents Row */}
             {(linkItems.length > 0 || documentItems.length > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4">
                     {/* Links Section */}

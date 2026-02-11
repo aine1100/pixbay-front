@@ -76,7 +76,7 @@ export default function CreatorProfilePage() {
                 description: (m.metadata as any)?.description || "Creative showcase item"
             });
             return acc;
-        }, {})),
+        }, {})) as any[],
         externalLinks: (creator.portfolioMedia || []).filter((m: any) => m.type === 'LINK').map((m: any) => ({
             id: m.id,
             url: m.url,
@@ -90,22 +90,22 @@ export default function CreatorProfilePage() {
             date: new Date(r.createdAt).toLocaleDateString(),
             rating: r.rating,
             comment: r.comment,
-            avatar: (r.reviewer?.profilePicture && r.reviewer.profilePicture.startsWith('http')) 
-                ? r.reviewer.profilePicture 
+            avatar: (r.reviewer?.profilePicture && r.reviewer.profilePicture.startsWith('http'))
+                ? r.reviewer.profilePicture
                 : `https://ui-avatars.com/api/?name=${r.reviewer?.firstName || "A"}+${r.reviewer?.lastName || "U"}&background=random`
         }))
     } : null;
 
     const nextImage = useCallback(() => {
-        if (selectedProjectIndex !== null && displayData && displayData.portfolio[selectedProjectIndex]?.items.length > 0) {
-            const projectItems = displayData.portfolio[selectedProjectIndex].items;
+        if (selectedProjectIndex !== null && displayData && (displayData.portfolio[selectedProjectIndex] as any)?.items.length > 0) {
+            const projectItems = (displayData.portfolio[selectedProjectIndex] as any).items;
             setCurrentImageIndex((prev) => (prev + 1) % projectItems.length);
         }
     }, [selectedProjectIndex, displayData]);
 
     const prevImage = useCallback(() => {
-        if (selectedProjectIndex !== null && displayData && displayData.portfolio[selectedProjectIndex]?.items.length > 0) {
-            const projectItems = displayData.portfolio[selectedProjectIndex].items;
+        if (selectedProjectIndex !== null && displayData && (displayData.portfolio[selectedProjectIndex] as any)?.items.length > 0) {
+            const projectItems = (displayData.portfolio[selectedProjectIndex] as any).items;
             setCurrentImageIndex((prev) => (prev - 1 + projectItems.length) % projectItems.length);
         }
     }, [selectedProjectIndex, displayData]);
@@ -137,8 +137,8 @@ export default function CreatorProfilePage() {
         </div>
     );
 
-    const profilePictureUrl = (creator?.user.profilePicture && creator.user.profilePicture.startsWith('http')) 
-        ? creator.user.profilePicture 
+    const profilePictureUrl = (creator?.user.profilePicture && creator.user.profilePicture.startsWith('http'))
+        ? creator.user.profilePicture
         : `https://ui-avatars.com/api/?name=${creator?.user.firstName}+${creator?.user.lastName}&background=random`;
 
     return (
@@ -480,9 +480,9 @@ export default function CreatorProfilePage() {
                     {/* Header: Title & Close */}
                     <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
                         <div className="flex flex-col">
-                            <h3 className="text-white text-2xl font-semibold">{displayData.portfolio[selectedProjectIndex].title}</h3>
+                            <h3 className="text-white text-2xl font-semibold">{(displayData.portfolio[selectedProjectIndex] as any).title}</h3>
                             <p className="text-white/50 text-sm font-medium">
-                                {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.title || "Work Sample"} • Item {currentImageIndex + 1} of {displayData.portfolio[selectedProjectIndex].items.length}
+                                {(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex]?.title || "Work Sample"} • Item {currentImageIndex + 1} of {(displayData.portfolio[selectedProjectIndex] as any).items.length}
                             </p>
                         </div>
                         <button
@@ -496,7 +496,7 @@ export default function CreatorProfilePage() {
                     {/* Main Carousel Area */}
                     <div className="relative w-full h-[60vh] flex items-center justify-center gap-8 px-4" onClick={(e) => e.stopPropagation()}>
                         {/* Navigation Arrows (Only if more than one image) */}
-                        {displayData.portfolio[selectedProjectIndex].items.length > 1 && (
+                        {(displayData.portfolio[selectedProjectIndex] as any).items.length > 1 && (
                             <>
                                 <button
                                     className="absolute left-10 p-4 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all z-50 border border-white/10 active:scale-90"
@@ -516,17 +516,17 @@ export default function CreatorProfilePage() {
 
                         {/* Active Content */}
                         <div className="relative w-full lg:w-[60%] h-full rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
-                            {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.type === 'VIDEO' ? (
-                                <video 
-                                    src={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].url}
+                            {(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex]?.type === 'VIDEO' ? (
+                                <video
+                                    src={(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex].url}
                                     className="w-full h-full object-contain"
                                     controls
                                     autoPlay
                                 />
                             ) : (
                                 <NextImage
-                                    src={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].url}
-                                    alt={displayData.portfolio[selectedProjectIndex].items[currentImageIndex].title}
+                                    src={(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex].url}
+                                    alt={(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex].title}
                                     fill
                                     className="object-contain"
                                     priority
@@ -539,13 +539,13 @@ export default function CreatorProfilePage() {
                     <div className="absolute bottom-10 inset-x-0 flex flex-col items-center gap-8 px-8" onClick={(e) => e.stopPropagation()}>
                         <div className="max-w-3xl text-center">
                             <p className="text-white/80 text-lg leading-relaxed font-medium line-clamp-2">
-                                {displayData.portfolio[selectedProjectIndex].items[currentImageIndex]?.description}
+                                {(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex]?.description}
                             </p>
                         </div>
 
-                        {displayData.portfolio[selectedProjectIndex].items.length > 1 && (
+                        {(displayData.portfolio[selectedProjectIndex] as any).items.length > 1 && (
                             <div className="flex gap-2">
-                                {displayData.portfolio[selectedProjectIndex].items.map((_: any, index: number) => (
+                                {(displayData.portfolio[selectedProjectIndex] as any).items.map((_: any, index: number) => (
                                     <button
                                         key={index}
                                         onClick={() => setCurrentImageIndex(index)}
