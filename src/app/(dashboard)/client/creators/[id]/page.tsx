@@ -26,6 +26,7 @@ import { useParams } from "next/navigation";
 import { useCreatorProfile } from "@/features/creators/hooks/useCreators";
 import { Loading } from "@/components/ui/loading";
 import { BookingModal } from "@/features/bookings/components/BookingModal";
+import { chatService } from "@/features/chat/services/chat.service";
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -274,12 +275,27 @@ export default function CreatorProfilePage() {
                         </div>
 
                         {/* CTA */}
-                        <button 
-                            onClick={() => setIsBookingModalOpen(true)}
-                            className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none"
-                        >
-                            Book creator now
-                        </button>
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => setIsBookingModalOpen(true)}
+                                className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none"
+                            >
+                                Book creator now
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const chat = await chatService.initiateChat(creator.user.id);
+                                        window.location.href = `/client/messages?chatId=${chat.id}`;
+                                    } catch (error) {
+                                        console.error("Failed to initiate chat:", error);
+                                    }
+                                }}
+                                className="w-full h-14 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95"
+                            >
+                                Message creator
+                            </button>
+                        </div>
                     </div>
                 </div>
 

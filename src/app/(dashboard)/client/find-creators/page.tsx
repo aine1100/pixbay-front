@@ -18,6 +18,7 @@ export default function FindCreatorsPage() {
     const creators = useMemo(() => {
         return (rawCreators || []).map((c: any) => ({
             id: c.id,
+            userId: c.user.id,
             name: `${c.user.firstName} ${c.user.lastName}`,
             role: c.creatorType.charAt(0) + c.creatorType.slice(1).toLowerCase().replace('_', ' '),
             avatar: c.user.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400",

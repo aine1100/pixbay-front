@@ -16,19 +16,19 @@ import { cn } from "@/lib/utils";
 import { useUserStore } from "@/features/user/store/userStore";
 import { authService } from "@/features/auth/services/auth.service";
 import { useRouter } from "next/navigation";
+import { useUnreadCount } from "@/features/chat/hooks/useUnreadCount";
 
 interface MenuItem {
     label: string;
     icon: any;
     href: string;
-    badge?: string;
 }
 
 const CLIENT_MENU_ITEMS: MenuItem[] = [
     { label: "Home", icon: LayoutDashboard, href: "/client" },
     { label: "Find Creators", icon: Search, href: "/client/find-creators" },
     { label: "Bookings", icon: Calendar, href: "/client/bookings" },
-    { label: "Messages", icon: MessageSquare, href: "/client/messages", badge: "12+" },
+    { label: "Messages", icon: MessageSquare, href: "/client/messages" },
     { label: "Payments", icon: Wallet, href: "/client/payments" },
 ];
 
@@ -53,6 +53,7 @@ export function Sidebar() {
     const role = user?.role || "CLIENT";
     const menuItems = role === "CREATOR" ? CREATOR_MENU_ITEMS : CLIENT_MENU_ITEMS;
     const generalItems = GENERAL_ITEMS(role);
+    const unreadCount = useUnreadCount();
 
     const handleLogout = () => {
         authService.logout();
@@ -74,6 +75,8 @@ export function Sidebar() {
                                 (pathname.startsWith(item.href + "/") && item.href !== "/client" && item.href !== "/creator") ||
                                 (item.href === "/client/find-creators" && pathname.startsWith("/client/creators"));
 
+                            const isMessages = item.label === "Messages";
+
                             return (
                                 <Link
                                     key={item.href}
@@ -89,12 +92,12 @@ export function Sidebar() {
                                         <item.icon className={cn("w-5 h-5 transition-colors", isActive ? "text-white" : "text-slate-600 group-hover:text-slate-900")} />
                                         <span className="text-[14px] font-semibold">{item.label}</span>
                                     </div>
-                                    {item.badge && (
+                                    {isMessages && unreadCount > 0 && (
                                         <span className={cn(
-                                            "text-[10px] font-semibold px-2 py-0.5 rounded-lg",
-                                            isActive ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                                            "min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full text-[10px] font-semibold",
+                                            isActive ? "bg-white text-red-500" : "bg-red-500 text-white"
                                         )}>
-                                            {item.badge}
+                                            {unreadCount > 99 ? "99+" : unreadCount}
                                         </span>
                                     )}
                                 </Link>

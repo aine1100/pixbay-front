@@ -3,9 +3,12 @@
 import Link from "next/link";
 import NextImage from "next/image";
 import { Star, BadgeCheck, Heart, Briefcase } from "lucide-react";
+import { chatService } from "@/features/chat/services/chat.service";
+import { useRouter } from "next/navigation";
 
 interface CreatorCardProps {
     id: string;
+    userId: string;
     name: string;
     role: string;
     specialty?: string;
@@ -19,6 +22,7 @@ interface CreatorCardProps {
 
 export function CreatorCard({
     id,
+    userId,
     name,
     role,
     specialty,
@@ -103,12 +107,28 @@ export function CreatorCard({
                         {description}... <button className="text-primary font-semibold hover:underline">more</button>
                     </p>
 
-                    <Link
-                        href={`/client/creators/${id}`}
-                        className="flex-shrink-0 bg-primary rounded-xl px-8 h-11 flex items-center justify-center text-white text-sm font-medium tracking-widest hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
-                    >
-                        View Portfolio
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={async () => {
+                                try {
+                                    // Use userId instead of creatorId for chat initiation
+                                    const chat = await chatService.initiateChat(userId);
+                                    window.location.href = `/client/messages?chatId=${chat.id}`;
+                                } catch (error) {
+                                    console.error("Failed to initiate chat:", error);
+                                }
+                            }}
+                            className="bg-slate-50 border border-slate-100 rounded-xl px-8 h-11 flex items-center justify-center text-slate-900 text-sm font-semibold tracking-widest hover:bg-slate-100 transition-all active:scale-95"
+                        >
+                            Message
+                        </button>
+                        <Link
+                            href={`/client/creators/${id}`}
+                            className="bg-primary rounded-xl px-8 h-11 flex items-center justify-center text-white text-sm font-semibold tracking-widest hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
+                        >
+                            View Portfolio
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

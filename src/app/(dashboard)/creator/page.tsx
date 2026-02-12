@@ -10,7 +10,9 @@ import { RecentBookings } from "@/features/creators/components/Dashboard/RecentB
 import { useUserStore } from "@/features/user/store/userStore";
 import { useProfile } from "@/features/user/hooks/useProfile";
 import { useDashboardStats } from "@/features/dashboard/hooks/useDashboardStats";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, MessageSquare } from "lucide-react";
+import { RecentMessages } from "@/features/creators/components/Dashboard/RecentMessages";
+import Link from "next/link";
 
 export default function CreatorDashboardPage() {
     const { user: storeUser } = useUserStore();
@@ -80,13 +82,32 @@ export default function CreatorDashboardPage() {
                 <CreatorStats stats={stats} isLoading={isLoading} />
             </div>
 
-            {/* Second Row: Reviews & Payments */}
+            {/* Second Row: Reviews & Payments & Messages */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-8">
                     <RecentReviews />
+                    <RecentMessages />
                 </div>
-                <div>
+                <div className="space-y-8">
                     <PaymentsMini transactions={transactions} isLoading={isLoading} />
+                    
+                    {/* Quick Access Card */}
+                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 relative overflow-hidden group">
+                        <div className="relative z-10">
+                            <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mb-6">
+                                <MessageSquare className="w-6 h-6 text-primary" />
+                            </div>
+                            <h4 className="text-xl font-semibold text-slate-900 mb-2">Need Help?</h4>
+                            <p className="text-slate-500 text-sm mb-8 font-medium leading-relaxed">
+                                Our support team is here for you 24/7.
+                            </p>
+                            <Link href="/creator/help">
+                                <button className="w-full h-12 bg-slate-900 text-white rounded-2xl font-semibold text-sm hover:bg-slate-800 transition-all">
+                                    Contact Support
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
 
