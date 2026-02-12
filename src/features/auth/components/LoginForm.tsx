@@ -39,16 +39,18 @@ export function LoginForm() {
         setError(null);
         try {
             const response = await authService.login(data);
-            toast.success("Login successful!");
+            // toast.success("Login successful!");
             console.log("Login Success:", response);
             
             // Redirect based on role (handle both direct and nested response)
             const authData = response.data || response;
             if (authData.user) {
+
                 setUser(authData.user);
             }
             const role = authData.user?.role || authData.role;
             if (role === "CLIENT") {
+                toast.success("Login Successfully")
                 router.push("/client");
             } else if (role === "CREATOR") {
                 const profile = authData.user?.creatorProfile;

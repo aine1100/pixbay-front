@@ -16,6 +16,8 @@ import { useBookingDetails, useUpdateBookingStatus } from "@/features/bookings/h
 import { Loading } from "@/components/ui/loading";
 import { toast } from "react-hot-toast";
 import { bookingService } from "@/features/bookings/services/booking.service";
+import { AddProjectMediaModal } from "@/features/bookings/components/AddProjectMediaModal";
+import { ProjectMediaGallery } from "@/features/bookings/components/ProjectMediaGallery";
 
 export default function CreatorBookingDetailsPage() {
     const params = useParams();
@@ -25,6 +27,7 @@ export default function CreatorBookingDetailsPage() {
     const { data: booking, isLoading, error, refetch } = useBookingDetails(id);
     const updateStatusMutation = useUpdateBookingStatus();
     const [isCheckingIn, setIsCheckingIn] = useState(false);
+    const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
     const client = booking?.client || {};
     const bookingDetails = booking?.bookingDetails || {};
@@ -235,6 +238,9 @@ export default function CreatorBookingDetailsPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Project Media Gallery */}
+                        <ProjectMediaGallery delivery={booking.delivery} />
                     </div>
 
                     {/* Right Column: Sticky Sidebar */}
@@ -283,18 +289,19 @@ export default function CreatorBookingDetailsPage() {
                                     </>
                                 ) : (
                                     <>
-                                        {booking.status === "CONFIRMED" && (
+                                        {(booking.status === "CONFIRMED" || booking.status === "IN_PROGRESS") && (
                                             <button
-                                                onClick={() => handleUpdateStatus("IN_PROGRESS")}
-                                                className="w-full h-14 bg-black text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-100"
+                                                onClick={() => setIsUploadModalOpen(true)}
+                                                className="w-full h-14 bg-black text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 flex items-center justify-center gap-2"
                                             >
-                                                Start Project
+                                                <Plus className="w-4 h-4" />
+                                                Add Project Images
                                             </button>
                                         )}
                                         {booking.status === "IN_PROGRESS" && (
                                             <button
                                                 onClick={() => handleUpdateStatus("COMPLETED")}
-                                                className="w-full h-14 bg-green-500 text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em] shadow-lg shadow-green-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                                className="w-full h-14 bg-green-500 text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em] shadow-lg shadow-green-500/20 hover:scale-[1.02] active:scale-95 transition-all mt-3"
                                             >
                                                 Mark as Completed
                                             </button>
@@ -341,7 +348,7 @@ export default function CreatorBookingDetailsPage() {
                         </div>
 
                         {/* Project Deliverables Card */}
-                        <div className="p-8 bg-black rounded-[32px] text-white space-y-4 shadow-xl">
+                        <div className="p-8  rounded-[32px] text-white space-y-4 shadow-xl">
                             <h4 className="text-sm font-semibold tracking-widest uppercase">Project Deliverables</h4>
                             <p className="text-white/40 text-[11px] leading-relaxed">
                                 Once you complete the shoot, you'll be able to upload the final files here for client approval and payment release.
@@ -354,6 +361,13 @@ export default function CreatorBookingDetailsPage() {
                     </div>
                 </div>
             </div>
+
+            <AddProjectMediaModal
+                bookingId={id}
+                isOpen={isUploadModalOpen}
+                onClose={() => setIsUploadModalOpen(false)}
+                onSuccess={() => refetch()}
+            />
         </div>
     );
 }

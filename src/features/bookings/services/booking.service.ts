@@ -28,5 +28,23 @@ export const bookingService = {
 
     async registerCheckIn(id: string, sessionNumber: number, location: { latitude: number; longitude: number }) {
         return api.post(`/bookings/${id}/check-in`, { sessionNumber, location });
+    },
+
+    async uploadProjectMedia(id: string, data: { files?: File[]; links?: string[] }) {
+        const formData = new FormData();
+        
+        if (data.files) {
+            data.files.forEach(file => {
+                formData.append("delivery", file);
+            });
+        }
+
+        if (data.links) {
+            data.links.forEach(link => {
+                formData.append("links", link);
+            });
+        }
+
+        return api.post(`/bookings/${id}/delivery`, formData);
     }
 };

@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useRef} from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/features/dashboard/components/Sidebar";
 import { NotificationDropdown } from "@/features/dashboard/components/NotificationDropdown";
-import { Search, Bell, Menu, X, Mail, ChevronDown } from "lucide-react";
+import { Search, Bell, Menu, X, Mail, ChevronDown, Settings, LogOut, User } from "lucide-react";
 import Image from "next/image";
 import { useProfile } from "@/features/user/hooks/useProfile";
 import { Loading } from "@/components/ui/loading";
 import { authStorage } from "@/lib/auth-storage";
-
-import { useUserStore } from "@/features/user/store/userStore";
+import { authService } from "@/features/auth/services/auth.service";
 
 import { CompleteProfileModal } from "@/features/creators/components/Dashboard/CompleteProfileModal";
+import { cn } from "@/lib/utils";
+import { useUserStore } from "@/features/user/store/userStore";
 
 export default function DashboardLayout({
     children,
@@ -44,6 +45,34 @@ export default function DashboardLayout({
     }, [profileUser]);
 
     // ... existing useEffect ...
+
+    const [isLangOpen, setIsLangOpen] = useState(false);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const langRef = useRef<HTMLDivElement>(null);
+    const profileRef = useRef<HTMLDivElement>(null);
+
+    const handleLogout = () => {
+        authService.logout();
+        router.push("/login");
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (langRef.current && !langRef.current.contains(event.target as Node)) {
+                setIsLangOpen(false);
+            }
+            if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+                setIsProfileOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const languages = [
+        { id: "en", label: "England", flag: "https://flagcdn.com/w40/gb.png", active: true },
+        { id: "fr", label: "French", flag: "https://flagcdn.com/w40/fr.png", active: false },
+    ];
 
     useEffect(() => {
         const checkAuth = () => {
@@ -133,34 +162,102 @@ export default function DashboardLayout({
                         {/* Bell Icon */}
                         <NotificationDropdown />
 
-                        {/* Language Selector */}
-                        <div className="flex items-center gap-1.5 px-3 h-10 bg-slate-50 rounded-full border border-slate-100/50 cursor-pointer hover:bg-slate-100 transition-colors hidden md:flex">
-                            <div className="w-6 h-4 relative overflow-hidden rounded-sm">
-                                <Image
-                                    src="https://flagcdn.com/w40/rw.png"
-                                    alt="Rwanda"
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
+                        {/* Language Selector Dropdown */}
+                        <div className="relative" ref={langRef}>
+                            <button
+                                onClick={() => setIsLangOpen(!isLangOpen)}
+                                className="flex items-center gap-1.5 px-3 h-10 bg-white rounded-full border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors hidden md:flex outline-none"
+                            >
+                                <div className="w-6 h-4 relative overflow-hidden rounded-sm border border-slate-100">
+                                    <Image
+                                        src="https://flagcdn.com/w40/gb.png"
+                                        alt="English"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-300", isLangOpen && "rotate-180")} />
+                            </button>
+
+                            {isLangOpen && (
+                                <div className="absolute top-[calc(100%+12px)] right-0 w-48 bg-white rounded-2xl border border-slate-100/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-1.5 space-y-0.5">
+                                        {languages.map((lang) => (
+                                            <button
+                                                key={lang.id}
+                                                disabled={!lang.active}
+                                                className={cn(
+                                                    "w-full flex items-center gap-3 px-3.5 h-11 rounded-xl text-[13px] font-semibold transition-all",
+                                                    lang.active 
+                                                        ? "text-slate-900 hover:bg-slate-50" 
+                                                        : "text-slate-300 cursor-not-allowed"
+                                                )}
+                                            >
+                                                <div className="w-5 h-3.5 relative overflow-hidden rounded-sm border border-slate-100 shrink-0">
+                                                    <Image src={lang.flag} alt={lang.label} fill className="object-cover" />
+                                                </div>
+                                                <span>{lang.label}</span>
+                                                {lang.active && <div className="ml-auto w-1.5 h-1.5 bg-primary rounded-full" />}
+                                                {!lang.active && <span className="ml-auto text-[10px] uppercase tracking-wider opacity-50">Soon</span>}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Profile Info */}
-                        <div className="flex items-center gap-4 pl-6 border-l border-slate-100">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-100 overflow-hidden relative cursor-pointer">
-                                <Image
-                                    src={displayUser?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"}
-                                    alt="Profile"
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
-                            <div className="flex items-center gap-2 cursor-pointer group">
-                                <p className="text-sm font-semibold text-slate-900 leading-none">
-                                    {displayUser?.firstName && displayUser?.lastName ? `${displayUser.firstName} ${displayUser.lastName}` : (displayUser?.firstName || displayUser?.email || "User")}
-                                </p>
-                                <ChevronDown className="w-4 h-4 text-slate-900 group-hover:translate-y-0.5 transition-transform" />
-                            </div>
+                        {/* Profile Dropdown */}
+                        <div className="relative" ref={profileRef}>
+                            <button
+                                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                                className="flex items-center gap-4 pl-6 border-l border-slate-100 outline-none group"
+                            >
+                                <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-100 overflow-hidden relative transition-transform group-hover:scale-105">
+                                    <Image
+                                        src={displayUser?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"}
+                                        alt="Profile"
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <p className="text-sm font-semibold text-slate-900 leading-none">
+                                        {displayUser?.firstName && displayUser?.lastName ? `${displayUser.firstName} ${displayUser.lastName}` : (displayUser?.firstName || displayUser?.email || "User")}
+                                    </p>
+                                    <ChevronDown className={cn("w-4 h-4 text-slate-400 transition-transform duration-300", isProfileOpen && "rotate-180")} />
+                                </div>
+                            </button>
+
+                            {isProfileOpen && (
+                                <div className="absolute top-[calc(100%+12px)] right-0 w-64 bg-white rounded-[24px] border border-slate-100/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                    {/* User Info Header */}
+                                    <div className="px-6 py-5 bg-slate-50/50 border-b border-slate-100">
+                                        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Logged in as</p>
+                                        <p className="text-[14px] font-semibold text-slate-900 truncate">{displayUser?.email}</p>
+                                    </div>
+
+                                    <div className="p-2 space-y-0.5">
+                                        <button 
+                                            onClick={() => {
+                                                setIsProfileOpen(false);
+                                                router.push(displayUser?.role === 'CREATOR' ? '/creator/settings' : '/client/settings');
+                                            }}
+                                            className="w-full flex items-center gap-3 px-4 h-12 rounded-xl text-[14px] font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
+                                        >
+                                            <Settings className="w-4.5 h-4.5" />
+                                            <span>Settings</span>
+                                        </button>
+                                        <div className="h-px bg-slate-100 mx-3 my-1" />
+                                        <button 
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-3 px-4 h-12 rounded-xl text-[14px] font-semibold text-red-500 hover:bg-red-50 transition-all"
+                                        >
+                                            <LogOut className="w-4.5 h-4.5" />
+                                            <span>Log Out</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>

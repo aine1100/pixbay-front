@@ -9,12 +9,17 @@ import { ProjectRecommendations } from "@/features/creators/components/Dashboard
 import { RecentBookings } from "@/features/creators/components/Dashboard/RecentBookings";
 import { useUserStore } from "@/features/user/store/userStore";
 import { useProfile } from "@/features/user/hooks/useProfile";
+import { useDashboardStats } from "@/features/dashboard/hooks/useDashboardStats";
 import { ChevronDown } from "lucide-react";
 
 export default function CreatorDashboardPage() {
     const { user: storeUser } = useUserStore();
     const { data: profile } = useProfile();
     const user = profile || storeUser;
+
+    const { data: dashboardData, isLoading } = useDashboardStats();
+    const stats = dashboardData?.stats || {};
+    const transactions = dashboardData?.transactions || [];
     
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -72,7 +77,7 @@ export default function CreatorDashboardPage() {
                         <ChevronDown className="w-4 h-4" />
                     </button>
                 </div>
-                <CreatorStats />
+                <CreatorStats stats={stats} isLoading={isLoading} />
             </div>
 
             {/* Second Row: Reviews & Payments */}
@@ -81,7 +86,7 @@ export default function CreatorDashboardPage() {
                     <RecentReviews />
                 </div>
                 <div>
-                    <PaymentsMini />
+                    <PaymentsMini transactions={transactions} isLoading={isLoading} />
                 </div>
             </div>
 

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useBookingDetails, useUpdateBookingStatus } from "@/features/bookings/hooks/useBookings";
 import { Loading } from "@/components/ui/loading";
 import { toast } from "react-hot-toast";
+import { ProjectMediaGallery } from "@/features/bookings/components/ProjectMediaGallery";
 
 export default function BookingDetailsPage() {
     const params = useParams();
@@ -206,6 +207,9 @@ export default function BookingDetailsPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Project Media Gallery */}
+                        <ProjectMediaGallery delivery={booking.delivery} />
                     </div>
 
                     {/* Right Column: Sticky Sidebar */}

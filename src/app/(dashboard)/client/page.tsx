@@ -15,11 +15,28 @@ import {
     ArrowUpRight
 } from "lucide-react";
 
+import { useState } from "react";
 import { useUserStore } from "@/features/user/store/userStore";
+import { useDashboardStats } from "@/features/dashboard/hooks/useDashboardStats";
 
 export default function ClientDashboardPage() {
     const { user } = useUserStore();
     const userName = user?.firstName || "User";
+
+    // Calendar state
+    const today = new Date();
+    const [month, setMonth] = useState(today.getMonth() + 1);
+    const [year, setYear] = useState(today.getFullYear());
+
+    const { data: dashboardData, isLoading } = useDashboardStats(month, year);
+    const stats = dashboardData?.stats || {};
+    const events = dashboardData?.events || [];
+    const transactions = dashboardData?.transactions || [];
+
+    const handleNavigate = (newMonth: number, newYear: number) => {
+        setMonth(newMonth);
+        setYear(newYear);
+    };
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 animate-in fade-in duration-500">
@@ -36,34 +53,34 @@ export default function ClientDashboardPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <StatsCard
                             title="Active Bookings"
-                            value="4"
-                            trend="+22.5%"
+                            value={isLoading ? "..." : stats.activeBookings?.toString() || "0"}
+                            trend=""
                             trendType="up"
-                            description="+1"
+                            description="Ongoing"
                             icon={CalendarCheck}
                         />
                         <StatsCard
                             title="Total Spent"
-                            value="$2,500"
-                            trend="+10%"
+                            value={isLoading ? "..." : `RWF ${stats.totalSpent?.toLocaleString() || "0"}`}
+                            trend=""
                             trendType="up"
-                            description="+$50"
+                            description="Confirmed"
                             icon={CreditCard}
                         />
                         <StatsCard
                             title="Pending Reviews"
-                            value="1"
-                            trend="+0.5%"
+                            value={isLoading ? "..." : stats.pendingReviews?.toString() || "0"}
+                            trend=""
                             trendType="up"
-                            description="1"
+                            description="Feedback"
                             icon={Star}
                         />
                         <StatsCard
                             title="Completed Orders"
-                            value="4"
-                            trend="+23.5%"
+                            value={isLoading ? "..." : stats.completedOrders?.toString() || "0"}
+                            trend=""
                             trendType="down"
-                            description="-2"
+                            description="Total"
                             icon={CheckCircle2}
                         />
                     </div>
@@ -75,7 +92,7 @@ export default function ClientDashboardPage() {
 
                     {/* Recent Payments Section */}
                     <div className="bg-white p-8 rounded-[40px] border border-slate-100 flex flex-col min-h-[400px]">
-                        <RecentPayments />
+                        <RecentPayments transactions={transactions} isLoading={isLoading} />
                     </div>
                 </div>
 
@@ -89,7 +106,12 @@ export default function ClientDashboardPage() {
 
                     {/* Schedule Manager */}
                     <div className="bg-white p-2 rounded-[40px] border border-slate-100">
-                        <CalendarWidget />
+                        <CalendarWidget 
+                            events={events} 
+                            currentMonth={month}
+                            currentYear={year}
+                            onNavigate={handleNavigate}
+                        />
                     </div>
 
                     {/* Book Session Card - White Variant */}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSubmitTicket, useMyTickets } from "@/features/user/hooks/useSupport";
+import { toast } from "react-hot-toast";
 
 const HELP_CATEGORIES = [
     { id: "general", label: "General", icon: HelpCircle },
@@ -58,6 +59,10 @@ export default function HelpPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const TICKETS_PER_PAGE = 5;
+
     // Support Form States
     const [department, setDepartment] = useState("Customer Support");
     const [subject, setSubject] = useState("");
@@ -66,6 +71,13 @@ export default function HelpPage() {
     const { data: ticketsData, isLoading: isTicketsLoading } = useMyTickets();
     const tickets = ticketsData?.data || [];
 
+    // Paginated Tickets
+    const totalPages = Math.ceil(tickets.length / TICKETS_PER_PAGE);
+    const paginatedTickets = tickets.slice(
+        (currentPage - 1) * TICKETS_PER_PAGE,
+        currentPage * TICKETS_PER_PAGE
+    );
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -73,15 +85,20 @@ export default function HelpPage() {
                 subject,
                 message,
                 priority: department === "Safety & Security" ? "HIGH" : "NORMAL",
-                // name and email will be handled by backend if authenticated, 
-                // but we could also pass them if we wanted guest support info
             });
             setSubject("");
             setMessage("");
+            toast.success("Support ticket submitted successfully!");
+            setActiveTab("tickets");
         } catch (error) {
             // Error handled by hook
         }
     };
+
+    // Reset page when data changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [tickets.length]);
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -147,58 +164,101 @@ export default function HelpPage() {
                                         You haven&apos;t submitted any support requests yet.
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
-                                        {tickets.map((ticket: any) => (
-                                            <div key={ticket.id} className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 space-y-3">
-                                                <div className="flex flex-wrap items-center justify-between gap-4">
-                                                    <div className="space-y-1">
-                                                        <h3 className="text-[15px] font-bold text-slate-900">{ticket.subject}</h3>
-                                                        <p className="text-[12px] text-slate-400 font-medium">
-                                                            ID: {ticket.id} • {new Date(ticket.createdAt).toLocaleDateString()}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={cn(
-                                                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
-                                                            ticket.status === "RESOLVED" ? "bg-green-100 text-green-600" :
-                                                            ticket.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
-                                                        )}>
-                                                            {ticket.status}
-                                                        </span>
-                                                        <span className={cn(
-                                                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
-                                                            ticket.priority === "HIGH" || ticket.priority === "URGENT" ? "bg-red-100 text-red-600" : "bg-slate-200 text-slate-600"
-                                                        )}>
-                                                            {ticket.priority}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <p className="text-[14px] text-slate-600 font-medium line-clamp-2">{ticket.message}</p>
-                                                
-                                                {!ticket.adminNotified && ticket.notificationError && (
-                                                    <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[12px] font-semibold">
-                                                        <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
-                                                        <div className="space-y-0.5">
-                                                            <p>Admin notification failed: {ticket.notificationError}</p>
-                                                            <p className="opacity-70">Our system will keep retrying. Don&apos;t worry, your ticket is saved.</p>
+                                    <>
+                                        <div className="space-y-4">
+                                            {paginatedTickets.map((ticket: any) => (
+                                                <div key={ticket.id} className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 space-y-3">
+                                                    <div className="flex flex-wrap items-center justify-between gap-4">
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-[15px] font-semibold text-slate-900">{ticket.subject}</h3>
+                                                            <p className="text-[12px] text-slate-400 font-medium">
+                                                                ID: {ticket.id} • {new Date(ticket.createdAt).toLocaleDateString()}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={cn(
+                                                                "px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider",
+                                                                ticket.status === "RESOLVED" ? "bg-green-100 text-green-600" :
+                                                                ticket.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
+                                                            )}>
+                                                                {ticket.status}
+                                                            </span>
+                                                            <span className={cn(
+                                                                "px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider",
+                                                                ticket.priority === "HIGH" || ticket.priority === "URGENT" ? "bg-red-100 text-red-600" : "bg-slate-200 text-slate-600"
+                                                            )}>
+                                                                {ticket.priority}
+                                                            </span>
                                                         </div>
                                                     </div>
-                                                )}
-                                                
-                                                {ticket.adminNotified ? (
-                                                    <div className="flex items-center gap-1.5 text-green-600 text-[12px] font-bold">
-                                                        <Check className="w-4 h-4" />
-                                                        Admin Notified Successfully
+                                                    <p className="text-[14px] text-slate-600 font-medium line-clamp-2">{ticket.message}</p>
+                                                    
+                                                    {!ticket.adminNotified && ticket.notificationError && (
+                                                        <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[12px] font-semibold">
+                                                            <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
+                                                            <div className="space-y-0.5">
+                                                                <p>Admin notification failed: {ticket.notificationError}</p>
+                                                                <p className="opacity-70">Our system will keep retrying. Don&apos;t worry, your ticket is saved.</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {ticket.adminNotified ? (
+                                                        <div className="flex items-center gap-1.5 text-green-600 text-[12px] font-semibold">
+                                                            <Check className="w-4 h-4" />
+                                                            Admin Notified Successfully
+                                                        </div>
+                                                    ) : !ticket.notificationError ? (
+                                                        <div className="flex items-center gap-1.5 text-slate-400 text-[12px] font-semibold">
+                                                            <Send className="w-4 h-4 animate-pulse" />
+                                                            Notification in process...
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Pagination Controls */}
+                                        {totalPages > 1 && (
+                                            <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
+                                                <p className="text-[13px] text-slate-500 font-medium">
+                                                    Showing <span className="text-slate-900">{(currentPage - 1) * TICKETS_PER_PAGE + 1}</span> to <span className="text-slate-900">{Math.min(currentPage * TICKETS_PER_PAGE, tickets.length)}</span> of <span className="text-slate-900">{tickets.length}</span> tickets
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                                        disabled={currentPage === 1}
+                                                        className="w-10 h-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronRight className="w-4 h-4 rotate-180" />
+                                                    </button>
+                                                    <div className="flex items-center gap-1">
+                                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                                            <button
+                                                                key={page}
+                                                                onClick={() => setCurrentPage(page)}
+                                                                className={cn(
+                                                                    "w-10 h-10 rounded-xl text-[13px] font-semibold transition-all",
+                                                                    currentPage === page
+                                                                        ? "bg-primary text-white"
+                                                                        : "text-slate-600 hover:bg-slate-50"
+                                                                )}
+                                                            >
+                                                                {page}
+                                                            </button>
+                                                        ))}
                                                     </div>
-                                                ) : !ticket.notificationError ? (
-                                                    <div className="flex items-center gap-1.5 text-slate-400 text-[12px] font-bold">
-                                                        <Send className="w-4 h-4 animate-pulse" />
-                                                        Notification in process...
-                                                    </div>
-                                                ) : null}
+                                                    <button
+                                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                                        disabled={currentPage === totalPages}
+                                                        className="w-10 h-10 rounded-xl border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                                    >
+                                                        <ChevronRight className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

@@ -70,7 +70,7 @@ export function Sidebar() {
                     <nav className="space-y-1">
                         {menuItems.map((item) => {
                             // Logic for active state including subroutes
-                            const isActive = pathname === item.href || 
+                            const isActive = pathname === item.href ||
                                 (pathname.startsWith(item.href + "/") && item.href !== "/client" && item.href !== "/creator") ||
                                 (item.href === "/client/find-creators" && pathname.startsWith("/client/creators"));
 
@@ -123,7 +123,7 @@ export function Sidebar() {
                                 </Link>
                             );
                         })}
-                        <button 
+                        <button
                             onClick={handleLogout}
                             className="w-full group flex items-center gap-4 px-4 h-12 rounded-xl text-slate-600 hover:text-primary hover:bg-slate-50 transition-all text-left mt-4"
                         >
