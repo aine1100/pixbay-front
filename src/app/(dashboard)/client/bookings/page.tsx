@@ -30,6 +30,8 @@ export default function MyBookingsPage() {
             rawStatus: b.status,
             price: b.pricing?.totalAmount || 0,
             type: b.category || b.serviceType?.replace('_', ' ') || "Photography",
+            eventTitle: b.category || b.serviceType?.replace('_', ' ') || "Session",
+            image: b.heroImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400",
             location: b.bookingDetails?.location || b.creator?.baseCity || "Remote",
             createdAt: b.createdAt
         }));
@@ -112,7 +114,7 @@ export default function MyBookingsPage() {
                 {/* Bookings List */}
                 <div className="space-y-4">
                     {filteredBookings.length > 0 ? (
-                        filteredBookings.map((booking:any) => (
+                        filteredBookings.map((booking: any) => (
                             <div
                                 key={booking.id}
                                 className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl border border-slate-100 hover:border-[#FF3B30]/5 transition-all gap-8"

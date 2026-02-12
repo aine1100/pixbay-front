@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCreatorProfile } from "@/features/creators/hooks/useCreators";
 import { Loading } from "@/components/ui/loading";
+import { BookingModal } from "@/features/bookings/components/BookingModal";
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -33,6 +34,7 @@ export default function CreatorProfilePage() {
 
     const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
     // Map backend data to UI-friendly structure
     const displayData = creator ? {
@@ -272,7 +274,10 @@ export default function CreatorProfilePage() {
                         </div>
 
                         {/* CTA */}
-                        <button className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none">
+                        <button 
+                            onClick={() => setIsBookingModalOpen(true)}
+                            className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none"
+                        >
                             Book creator now
                         </button>
                     </div>
@@ -556,6 +561,20 @@ export default function CreatorProfilePage() {
                         )}
                     </div>
                 </div>
+            )}
+
+            {/* Booking Modal */}
+            {displayData && (
+                <BookingModal
+                    isOpen={isBookingModalOpen}
+                    onClose={() => setIsBookingModalOpen(false)}
+                    creator={{
+                        id: displayData.id,
+                        name: displayData.name,
+                        pricing: displayData.pricing,
+                        category: displayData.role
+                    }}
+                />
             )}
         </div>
     );

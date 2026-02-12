@@ -44,7 +44,7 @@ export function PortfolioPage() {
             </div>
 
             {/* Content Area */}
-            <div className="bg-white rounded-[32px] border border-slate-100 p-8 min-h-[400px] shadow-sm">
+            <div className="bg-white rounded-[32px] border border-slate-100 p-8 min-h-[400px] ">
                 <PortfolioGrid items={portfolioItems} />
             </div>
 

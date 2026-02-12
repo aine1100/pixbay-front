@@ -33,3 +33,14 @@ export const useUpdateBookingStatus = () => {
         },
     });
 };
+
+export const useCreateBooking = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: { creatorId: string; serviceType: string; category: string; bookingDetails: any; pricing: any }) =>
+            bookingService.createBooking(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["bookings"] });
+        },
+    });
+};

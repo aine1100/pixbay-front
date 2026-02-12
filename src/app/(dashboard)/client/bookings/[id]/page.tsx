@@ -6,7 +6,7 @@ import {
     Clock, Plus, Minus, Search, Bell, Globe, ChevronDown, CheckCircle2,
     Calendar as CalendarIcon, DollarSign, MessageSquare, Info,
     Camera, Image as ImageIcon, Video, Zap, ShieldCheck, Truck,
-    ChevronUp
+    ChevronUp, Mail, Phone, ExternalLink, AlertCircle
 } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useBookingDetails, useUpdateBookingStatus } from "@/features/bookings/hooks/useBookings";
 import { Loading } from "@/components/ui/loading";
+import { toast } from "react-hot-toast";
 
 export default function BookingDetailsPage() {
     const params = useParams();
@@ -23,36 +24,11 @@ export default function BookingDetailsPage() {
     const { data: booking, isLoading, error } = useBookingDetails(id);
     const updateStatusMutation = useUpdateBookingStatus();
 
-    // Derived states from fetched booking
-    const eventTitle = booking?.category || booking?.serviceType?.replace('_', ' ') || "Event Details";
-    const pricing = booking?.pricing || {};
-    const creator = booking?.creator || {};
-    const creatorUser = creator.user || {};
-    const heroImage = booking?.heroImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200";
-
-    // For the UI logic that needs indices or states, we can adapt them
-    const [selectedService, setSelectedService] = useState("");
-    const [location, setLocation] = useState("");
-
-    useEffect(() => {
-        if (booking) {
-            setSelectedService(booking.serviceType);
-            setLocation(booking.bookingDetails?.location || "");
-        }
-    }, [booking]);
-
-    // Dropdown/Picker states
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            const target = event.target as Node;
-            if (dropdownRef.current && !dropdownRef.current.contains(target)) setIsDropdownOpen(false);
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+    // Generate calendar days for a fixed month (June 2026) for demo (if needed for picker later)
+    const calendarDays = useMemo(() => {
+        const days = [];
+        for (let i = 1; i <= 30; i++) days.push(i);
+        return days;
     }, []);
 
     if (isLoading) {
@@ -79,175 +55,257 @@ export default function BookingDetailsPage() {
         );
     }
 
+    const eventTitle = booking.category || booking.serviceType?.replace('_', ' ') || "Event Details";
+    const pricing = booking.pricing || {};
+    const creator = booking.creator || {};
+    const creatorUser = creator.user || {};
+    const heroImage = booking.heroImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200";
+    const bookingDetails = booking.bookingDetails || {};
 
-    // Generate calendar days for a fixed month (June 2026) for demo
-    const calendarDays = useMemo(() => {
-        const days = [];
-        // Just a simple static grid for 2026-06 (Starts on Monday)
-        for (let i = 1; i <= 30; i++) days.push(i);
-        return days;
-    }, []);
-
-    const timeSlots = [
-        "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
-        "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM",
-        "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM"
-    ];
+    const handlePayment = () => {
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 2000)),
+            {
+                loading: 'Initializing secure payment...',
+                success: 'Payment feature coming soon! Your booking is secured.',
+                error: 'Payment failed.',
+            }
+        );
+    };
 
     return (
-        <div className="bg-white min-h-screen pb-12 font-sans">
-            {/* Main Content Container */}
-            <div className="max-w-[1040px] mx-auto px-6 py-6">
-
-                {/* Back Link */}
-                <Link
-                    href="/client/bookings"
-                    className="flex items-center gap-2 text-slate-600 hover:text-primary py-5 transition-colors font-medium text-sm"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                    Back to bookings
-                </Link>
-
-                {/* Hero Section (More Compact Aspect Ratio) */}
-                <div className="relative w-full h-[300px] rounded-[32px] overflow-hidden mb-8 group">
-                    <NextImage
-                        src={heroImage}
-                        alt={eventTitle}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-1000"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                    {/* Overlay Info */}
-                    <div className="absolute bottom-8 left-8 text-white space-y-2">
-                        <h1 className="text-3xl font-sans font-semibold tracking-tight">{eventTitle}</h1>
-                        <div className="flex items-center gap-5">
-                            <div className="flex items-center gap-1.5">
-                                <MapPin className="w-3.5 h-3.5 text-[#FF3B30]" />
-                                <span className="text-[13px] font-semibold opacity-90">{booking.creator.location}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Star className="w-3.5 h-3.5 fill-[#FF3B30] text-[#FF3B30]" />
-                                <span className="text-[13px] font-semibold">{booking.creator.rating} Rating</span>
-                                <span className="text-[13px] font-semibold opacity-60"> {booking.creator.reviews} Reviews</span>
-                            </div>
+        <div className="bg-white min-h-screen pb-20 font-sans animate-in fade-in duration-700">
+            <div className="max-w-[1100px] mx-auto px-6 pt-6">
+                
+                {/* Navigation Header */}
+                <div className="flex items-center justify-between py-4 mb-6">
+                    <Link
+                        href="/client/bookings"
+                        className="flex items-center gap-2.5 text-slate-500 hover:text-primary transition-all font-semibold text-sm group"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                            <ChevronLeft className="w-5 h-5" />
+                        </div>
+                        Back to bookings
+                    </Link>
+                    
+                    <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-bold text-slate-300 tracking-widest uppercase">Booking ID: {booking.bookingNumber || id.slice(0, 8).toUpperCase()}</span>
+                        <div className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                            booking.status === "PENDING" ? "bg-orange-50 text-orange-600" :
+                            booking.status === "CONFIRMED" ? "bg-blue-50 text-blue-600" :
+                            booking.status === "IN_PROGRESS" ? "bg-green-50 text-green-600" :
+                            "bg-slate-100 text-slate-500"
+                        )}>
+                            {booking.status.replace('_', ' ')}
                         </div>
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-10 items-start">
-                    {/* Left Column: Creator Content */}
-                    <div className="flex-1 space-y-10">
-
-                        {/* Host Row */}
-                        <div className="flex items-center gap-3.5">
-                            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-slate-50">
-                                <NextImage
-                                    src={creatorUser.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300"}
-                                    alt={creatorUser.firstName || "Creator"}
-                                    fill
-                                    className="object-cover"
-                                />
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-base font-semibold text-black">Hosted by {creatorUser.firstName} {creatorUser.lastName}</h2>
-                                    {creator.verificationStatus === "APPROVED" && <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6]" />}
-                                </div>
-                                <p className="text-xs font-medium text-slate-400 italic">Professional Creator</p>
-                            </div>
-                        </div>
-
-                        {/* Overview */}
-                        <div className="space-y-3">
-                            <h3 className="text-md font-semibold text-slate-900 tracking-tight">Booking Overview</h3>
-                            <div className="text-slate-500 text-[14px] leading-relaxed max-w-[650px]">
-                                {booking.bookingDetails?.description || creator.bio}
-                            </div>
-                        </div>
-
-                        {/* Additional Info */}
-                        <div className="grid grid-cols-2 gap-6 pb-6 border-b border-slate-50">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Booking Date</p>
-                                <p className="text-sm font-semibold text-slate-700">
-                                    {new Date(booking.createdAt).toLocaleDateString('en-US', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })}
+                {/* Main Content Layout */}
+                <div className="grid lg:grid-cols-3 gap-10">
+                    
+                    {/* Left Column: Details */}
+                    <div className="lg:col-span-2 space-y-10">
+                        
+                        {/* Hero Image */}
+                        <div className="relative w-full h-[350px] rounded-[32px] overflow-hidden shadow-2xl shadow-slate-200 group">
+                            <NextImage
+                                src={heroImage}
+                                alt={eventTitle}
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform duration-1000"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute bottom-6 left-8 text-white">
+                                <h1 className="text-3xl font-bold tracking-tight">{eventTitle}</h1>
+                                <p className="text-white/80 font-medium text-sm mt-1 flex items-center gap-2">
+                                    <MapPin className="w-3.5 h-3.5 text-[#FF3B30]" />
+                                    {bookingDetails.location || "Location Not Specified"}
                                 </p>
                             </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Booking Number</p>
-                                <p className="text-sm font-semibold text-slate-700">{booking.bookingNumber}</p>
+                        </div>
+
+                        {/* Creator Info Card */}
+                        <div className="bg-slate-50/50 rounded-[32px] p-8 space-y-6 border border-slate-100">
+                            <div className="flex items-center gap-5">
+                                <div className="relative w-16 h-16 rounded-2xl overflow-hidden ring-4 ring-white shadow-sm">
+                                    <NextImage
+                                        src={creatorUser.profilePicture || `https://ui-avatars.com/api/?name=${creatorUser.firstName || 'C'}+${creatorUser.lastName || 'U'}&background=random`}
+                                        alt={creatorUser.firstName}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900">Hosted by {creatorUser.firstName} {creatorUser.lastName}</h2>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <div className="flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-[#FF3B30] text-[#FF3B30]" />
+                                            <span className="text-xs font-bold text-slate-700">{creator.rating || "5.0"}</span>
+                                        </div>
+                                        <span className="text-slate-300">|</span>
+                                        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">{creator.role || "Professional Creator"}</p>
+                                    </div>
+                                </div>
+                                <button className="ml-auto p-3 bg-white hover:bg-slate-50 text-primary rounded-xl border border-slate-100 transition-all active:scale-95 shadow-sm">
+                                    <MessageSquare className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-200/50">
+                                <div className="flex items-center gap-4 group cursor-pointer">
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-all shadow-sm">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Creator Email</p>
+                                        <p className="text-sm font-semibold text-slate-700">{creatorUser.email || "Contact via Chat"}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4 group cursor-pointer">
+                                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-slate-400 group-hover:text-primary transition-all shadow-sm">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <div className="space-y-0.5">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Support Contact</p>
+                                        <p className="text-sm font-semibold text-slate-700">Platform Secure Line</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Description & Requirements */}
+                        <div className="space-y-8 px-2">
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                    <Info className="w-5 h-5 text-primary" />
+                                    Project Requirements
+                                </h3>
+                                <p className="text-slate-600 leading-relaxed font-medium">
+                                    {bookingDetails.description || "No specific requirements provided at the time of booking. Ensure to discuss all details with the creator via direct message before the session starts."}
+                                </p>
+                            </div>
+
+                            {/* Metadata Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="p-5 bg-white border border-slate-100 rounded-2xl space-y-1 shadow-sm">
+                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Scheduled For</p>
+                                    <p className="text-sm font-bold text-slate-800">
+                                        {new Date(booking.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </p>
+                                </div>
+                                <div className="p-5 bg-white border border-slate-100 rounded-2xl space-y-1 shadow-sm">
+                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Service Level</p>
+                                    <p className="text-sm font-bold text-slate-800">{booking.serviceType?.replace('_', ' ')}</p>
+                                </div>
+                                <div className="p-5 bg-white border border-slate-100 rounded-2xl space-y-1 shadow-sm">
+                                    <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Duration</p>
+                                    <p className="text-sm font-bold text-slate-800">{bookingDetails.duration || "Standard Session"}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column: Sticky Booking Sidebar (Narrower) */}
-                    <div className="w-full lg:w-[350px] sticky top-12">
-                        <div className="bg-white border-2 border-slate-50 rounded-[32px] p-7 space-y-7">
-
-                            {/* Cost Summary */}
-                            <div className="pt-4 border-t border-slate-50 space-y-3">
-                                <div className="flex justify-between text-xs font-semibold text-slate-400">
-                                    <span className="uppercase tracking-widest">Base Fee</span>
-                                    <span>${pricing.baseAmount || 0}</span>
-                                </div>
-                                <div className="flex justify-between text-xs font-semibold text-slate-400">
-                                    <span className="uppercase tracking-widest">Platform Fee</span>
-                                    <span>${pricing.platformFee || 0}</span>
-                                </div>
-                                <div className="flex justify-between pt-2">
-                                    <span className="text-[14px] font-bold text-slate-900 uppercase tracking-widest">Total Amount</span>
-                                    <span className="text-[18px] font-bold text-primary">${pricing.totalAmount || 0}</span>
+                    {/* Right Column: Sticky Sidebar */}
+                    <div className="space-y-8">
+                        <div className="sticky top-8 bg-white border border-slate-100 rounded-[32px] p-8 space-y-8 ">
+                            
+                            <div className="space-y-1">
+                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Investment Summary</h3>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-4xl font-bold tracking-tighter text-slate-900">${pricing.totalAmount || 0}</span>
+                                    <span className="text-slate-400 font-bold text-sm tracking-tight uppercase">{pricing.currency || "USD"}</span>
                                 </div>
                             </div>
 
-                            {/* Actions */}
-                            <div className="space-y-3 pt-4">
-                                <button className="w-full h-12 bg-white border-2 border-slate-100 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                            <div className="space-y-4 py-6 border-y border-slate-50">
+                                <div className="flex justify-between text-[13px] font-semibold text-slate-500">
+                                    <span>Creative Services</span>
+                                    <span>${pricing.baseAmount || 0}</span>
+                                </div>
+                                <div className="flex justify-between text-[13px] font-semibold text-slate-500">
+                                    <span>Platform Protection Fee</span>
+                                    <span>${pricing.platformFee || 0}</span>
+                                </div>
+                                <div className="flex justify-between text-base font-bold text-slate-900 pt-2">
+                                    <span className="uppercase tracking-widest text-[11px]">Total Cost</span>
+                                    <span>${pricing.totalAmount || 0}</span>
+                                </div>
+                            </div>
+
+                            {/* Booking Management Actions */}
+                            <div className="space-y-3">
+                                {booking.status === "CONFIRMED" && (
+                                    <button 
+                                        onClick={handlePayment}
+                                        className="w-full h-14 bg-primary text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em]  hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Zap className="w-4 h-4" />
+                                        Complete Payment
+                                    </button>
+                                )}
+
+                                <button className="w-full h-14 bg-slate-50 text-slate-700 border border-slate-100 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-slate-100 transition-all flex items-center justify-center gap-2">
                                     <MessageSquare className="w-4 h-4" />
-                                    Message Creator
+                                    Contact Host
                                 </button>
 
                                 {booking.status === "PENDING" && (
-                                    <button
+                                    <button 
                                         onClick={() => {
                                             if (confirm("Are you sure you want to cancel this booking?")) {
                                                 updateStatusMutation.mutate({ id, status: "CANCELLED" });
                                             }
                                         }}
-                                        className="w-full h-12 bg-red-50 text-primary rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-red-100 transition-all"
+                                        className="w-full h-14 bg-red-50 text-red-500 rounded-2xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-red-100 transition-all"
                                     >
-                                        Cancel Booking
+                                        Cancel Request
                                     </button>
+                                )}
+
+                                {booking.status === "IN_PROGRESS" && (
+                                    <div className="p-4 bg-green-50 rounded-2xl border border-green-100 flex items-center gap-3">
+                                        <ShieldCheck className="w-5 h-5 text-green-500" />
+                                        <p className="text-[11px] font-bold text-green-700 leading-snug">
+                                            Job Protected. The session is currently in progress.
+                                        </p>
+                                    </div>
                                 )}
                             </div>
 
-                            <p className="text-center text-[10px] font-semibold text-slate-300 tracking-tight leading-relaxed">
-                                Need help with your booking?<br />
-                                <Link href="/client/help" className="text-primary hover:underline">Contact Support</Link>
-                            </p>
-                        </div>
-                    </div>
+                            <div className="flex items-center gap-3 p-4 bg-orange-50/50 rounded-2xl border border-orange-100/50">
+                                <AlertCircle className="w-5 h-5 text-orange-400" />
+                                <p className="text-[11px] font-bold text-orange-600 leading-snug">
+                                    Payments are held securely and released only after project completion.
+                                </p>
+                            </div>
 
-                    {/* Small Card below (secondary action - Narrower) */}
-                    <div className="mt-6 relative w-full h-32 rounded-[28px] overflow-hidden group cursor-pointer">
-                        <NextImage
-                            src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?q=80&w=400"
-                            alt="Portfolio"
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                            <div className="bg-white/90 backdrop-blur px-5 py-2.5 rounded-xl text-[10px] font-semibold text-black uppercase tracking-widest hover:bg-white transition-colors">
-                                Explore creators work
+                            {/* Booking Policies */}
+                            <div className="pt-6 border-t border-slate-50 space-y-4">
+                                <h4 className="text-[10px] font-bold tracking-widest uppercase text-slate-400">Booking Policies</h4>
+                                <div className="space-y-3">
+                                    <div className="flex gap-3">
+                                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                        <p className="text-slate-600 text-[10px] font-medium leading-relaxed">
+                                            Cancel up to 24 hours before the session for a full refund.
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <Check className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                        <p className="text-slate-600 text-[10px] font-medium leading-relaxed">
+                                            Platform protection covers all creative deliverables.
+                                        </p>
+                                    </div>
+                                </div>
+                                <Link href="/client/help" className="flex items-center gap-2 text-[10px] font-bold text-primary hover:underline">
+                                    <Info className="w-3.5 h-3.5" />
+                                    Read Full Terms
+                                </Link>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
