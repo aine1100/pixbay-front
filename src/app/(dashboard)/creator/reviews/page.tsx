@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React,{useState} from "react";
 import { Star, MessageCircle, Calendar, User, Search } from "lucide-react";
 import { useCreatorReviews } from "@/features/reviews/hooks/useReviews";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,8 @@ import { format } from "date-fns";
 
 export default function CreatorReviewsPage() {
     const { data: reviews, isLoading } = useCreatorReviews();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 5;
 
     if (isLoading) {
         return (
@@ -21,6 +23,13 @@ export default function CreatorReviewsPage() {
     const averageRating = reviews?.length
         ? (reviews.reduce((acc: number, rev: any) => acc + rev.rating, 0) / reviews.length).toFixed(1)
         : "0.0";
+
+    // Paginating reviews
+    const totalPages = Math.ceil((reviews?.length || 0) / itemsPerPage);
+    const paginatedReviews = reviews?.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
 
     return (
         <div className="max-w-[1200px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -66,64 +75,102 @@ export default function CreatorReviewsPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-6">
-                        {reviews.map((review: any) => (
-                            <div key={review.id} className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 transition-all hover:border-slate-200">
-                                <div className="flex flex-wrap items-start justify-between gap-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center text-slate-400">
-                                            {review.reviewer.profilePicture ? (
-                                                <img src={review.reviewer.profilePicture} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User className="w-6 h-6" />
-                                            )}
-                                        </div>
-                                        <div className="space-y-1">
-                                            <h4 className="text-[15px] font-semibold text-slate-900">
-                                                {review.reviewer.firstName} {review.reviewer.lastName}
-                                            </h4>
-                                            <div className="flex items-center gap-1.5">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star 
-                                                        key={i} 
-                                                        className={cn(
-                                                            "w-3.5 h-3.5",
-                                                            i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-200"
-                                                        )} 
-                                                    />
-                                                ))}
+                    <>
+                        <div className="grid grid-cols-1 gap-6">
+                            {paginatedReviews?.map((review: any) => (
+                                <div key={review.id} className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6 transition-all hover:border-slate-200">
+                                    <div className="flex flex-wrap items-start justify-between gap-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-14 h-14 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100 flex items-center justify-center text-slate-400">
+                                                {review.reviewer.profilePicture ? (
+                                                    <img src={review.reviewer.profilePicture} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User className="w-6 h-6" />
+                                                )}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h4 className="text-[15px] font-semibold text-slate-900">
+                                                    {review.reviewer.firstName} {review.reviewer.lastName}
+                                                </h4>
+                                                <div className="flex items-center gap-1.5">
+                                                    {[...Array(5)].map((_, i) => (
+                                                        <Star 
+                                                            key={i} 
+                                                            className={cn(
+                                                                "w-3.5 h-3.5",
+                                                                i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-200"
+                                                            )} 
+                                                        />
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <div className="flex flex-col items-end gap-1 text-right">
-                                        <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
-                                            <Calendar className="w-4 h-4" />
-                                            {format(new Date(review.createdAt), "MMMM d, yyyy")}
+                                        <div className="flex flex-col items-end gap-1 text-right">
+                                            <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
+                                                <Calendar className="w-4 h-4" />
+                                                {format(new Date(review.createdAt), "MMMM d, yyyy")}
+                                            </div>
+                                            <p className="text-[12px] font-semibold text-primary uppercase tracking-wider">
+                                                {review.booking.category} • {review.booking.bookingNumber}
+                                            </p>
                                         </div>
-                                        <p className="text-[12px] font-semibold text-primary uppercase tracking-wider">
-                                            {review.booking.category} • {review.booking.bookingNumber}
+                                    </div>
+
+                                    <div className="pl-18">
+                                        <p className="text-[15px] text-slate-600 font-medium leading-relaxed italic">
+                                            "{review.comment || "No comment provided."}"
                                         </p>
                                     </div>
-                                </div>
 
-                                <div className="pl-18">
-                                    <p className="text-[15px] text-slate-600 font-medium leading-relaxed italic">
-                                        "{review.comment || "No comment provided."}"
-                                    </p>
+                                    {review.response && (
+                                        <div className="ml-12 p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                                            <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Your Response</p>
+                                            <p className="text-[14px] text-slate-600 font-medium italic">
+                                                "{review.response.comment}"
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
+                            ))}
+                        </div>
 
-                                {review.response && (
-                                    <div className="ml-12 p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
-                                        <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Your Response</p>
-                                        <p className="text-[14px] text-slate-600 font-medium italic">
-                                            "{review.response.comment}"
-                                        </p>
-                                    </div>
-                                )}
+                        {/* Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-center gap-2 pt-8">
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 rounded-xl border border-slate-100 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                                >
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-2 px-4">
+                                    {[...Array(totalPages)].map((_, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => setCurrentPage(i + 1)}
+                                            className={cn(
+                                                "w-10 h-10 rounded-xl text-sm font-bold transition-all",
+                                                currentPage === i + 1
+                                                    ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                                    : "bg-white border border-slate-100 text-slate-500 hover:bg-slate-50"
+                                            )}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 rounded-xl border border-slate-100 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-all"
+                                >
+                                    Next
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

@@ -21,6 +21,7 @@ import {
     Tablet,
     LogOut,
     ChevronDown,
+    Plus,
     Check
 } from "lucide-react";
 import NextImage from "next/image";
@@ -29,6 +30,7 @@ import { useProfile } from "@/features/user/hooks/useProfile";
 import { useUpdateProfile, useUserSessions, useRevokeSession } from "@/features/user/hooks/useUser";
 import { Loading } from "@/components/ui/loading";
 import { authService } from "@/features/auth/services/auth.service";
+import { userService } from "@/features/user/services/user.service";
 import { toast } from "react-hot-toast";
 
 const SETTINGS_TABS = [
@@ -54,6 +56,9 @@ export default function CreatorSettingsPage() {
     const updateProfile = useUpdateProfile();
     const revokeSession = useRevokeSession();
 
+    // State for image upload
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Sync preferences when profile loads
     useEffect(() => {
@@ -144,7 +149,7 @@ export default function CreatorSettingsPage() {
                                 <h2 className="text-lg font-semibold text-slate-900 px-1">My Information</h2>
                                 <div className="bg-white rounded-[32px] border border-slate-100 p-8 flex items-center justify-between group">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-50 relative bg-slate-100">
+                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-50 relative bg-slate-100 group/avatar">
                                             {userData.profilePicture ? (
                                                 <NextImage
                                                     src={userData.profilePicture}
@@ -157,6 +162,42 @@ export default function CreatorSettingsPage() {
                                                     {userData.firstName?.[0]}{userData.lastName?.[0]}
                                                 </div>
                                             )}
+
+                                            {/* Hidden File Input */}
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    try {
+                                                        setIsUploadingImage(true);
+                                                        await userService.uploadProfilePicture(file);
+                                                        await updateProfile.mutateAsync({}); // Using this to trigger cache invalidation
+                                                        toast.success("Profile picture updated!");
+                                                    } catch (error) {
+                                                        toast.error("Failed to upload image");
+                                                    } finally {
+                                                        setIsUploadingImage(false);
+                                                    }
+                                                }}
+                                            />
+
+                                            {/* Upload Overlay */}
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingImage}
+                                                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity disabled:opacity-50"
+                                            >
+                                                {isUploadingImage ? (
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Plus className="w-6 h-6 text-white" />
+                                                )}
+                                            </button>
                                         </div>
                                         <div className="space-y-1">
                                             <h3 className="text-lg font-semibold text-slate-900">{fullName}</h3>
@@ -198,6 +239,38 @@ export default function CreatorSettingsPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                                     {isEditingProfile ? (
                                         <>
+                                            {/* Profile Photo Field */}
+                                            <div className="space-y-1.5 md:col-span-2 border-b border-slate-50 pb-6">
+                                                <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Profile Photo</p>
+                                                <div className="flex items-center gap-4 mt-2">
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden border border-slate-100 relative bg-slate-50">
+                                                        {userData.profilePicture? (
+                                                            <NextImage src={userData.profilePicture} alt="Profile" fill className="object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-xl font-bold text-slate-300">
+                                                                {userData.firstName?.[0]}{userData.lastName?.[0]}
+                                                            </div>
+                                                        )}
+                                                        {isUploadingImage && (
+                                                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                                                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            disabled={isUploadingImage}
+                                                            className="px-4 h-9 bg-slate-900 text-white rounded-xl font-semibold text-[13px] hover:bg-slate-800 transition-all disabled:opacity-50"
+                                                        >
+                                                            {isUploadingImage ? "Uploading..." : "Change Photo"}
+                                                        </button>
+                                                        <p className="text-[11px] text-slate-400 font-medium px-1">JPG, PNG or GIF. Max 5MB.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">First Name</p>
                                                 <input 
@@ -513,6 +586,24 @@ export default function CreatorSettingsPage() {
                     )}
                 </div>
             </div>
+            {/* Profile Upload Modal */}
+            {isUploadingImage && (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[32px] w-full max-w-sm p-8 space-y-6 text-center shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                            <Plus className="w-10 h-10 text-primary animate-pulse" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-semibold text-slate-900">Uploading Profile Photo</h3>
+                            <p className="text-slate-500 text-sm">Please wait while we process and secure your new profile picture.</p>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-primary h-full w-1/2 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
+                        </div>
+                        <p className="text-[12px] text-slate-400 font-medium tracking-wide uppercase">Processing ...</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -661,4 +752,17 @@ function ModernSelect({ value, onChange, options }: { value: string, onChange: (
             )}
         </div>
     );
+}
+
+const styles = `
+    @keyframes progress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+    }
+`;
+
+if (typeof document !== 'undefined') {
+    const styleTag = document.createElement('style');
+    styleTag.textContent = styles;
+    document.head.appendChild(styleTag);
 }

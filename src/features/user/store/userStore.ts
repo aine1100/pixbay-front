@@ -8,6 +8,7 @@ interface UserProfile {
     lastName: string;
     role: string;
     avatar?: string;
+    profilePicture?: string;
 }
 
 interface UserStore {

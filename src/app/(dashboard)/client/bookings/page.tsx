@@ -1,11 +1,13 @@
 "use client"
 import { useState, useMemo, useEffect, useRef } from "react";
-import { Search, Calendar, MoreVertical, CheckCircle2, Clock, XCircle, Eye, MessageCircle, X } from "lucide-react";
+import { Search, Calendar, MoreVertical, CheckCircle2, Clock, XCircle, Eye, MessageCircle, X, Star } from "lucide-react";
 import NextImage from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useBookings } from "@/features/bookings/hooks/useBookings";
 import { Loading } from "@/components/ui/loading";
+import { CreateReviewModal } from "@/features/reviews/components/CreateReviewModal";
+import { chatService } from "@/features/chat/services/chat.service";
 
 const FILTER_TABS = ["All", "Approved", "Cancelled", "Pending"];
 
@@ -13,6 +15,7 @@ export default function MyBookingsPage() {
     const [activeTab, setActiveTab] = useState("All");
     const [searchQuery, setSearchQuery] = useState("");
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [reviewingBooking, setReviewingBooking] = useState<{ id: string, creatorName: string } | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
 
     const { data: rawBookings, isLoading } = useBookings();
@@ -194,10 +197,32 @@ export default function MyBookingsPage() {
                                                         <Eye className="w-4 h-4 text-slate-400" />
                                                         View Details
                                                     </Link>
-                                                    <button className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-all text-left">
+                                                    <button
+                                                        onClick={() => {
+                                                            const chat = chatService.initiateChat(booking.creator.id);
+                                                            // Handle chat initiation if needed, or link to messages
+                                                        }}
+                                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-xl transition-all text-left"
+                                                    >
                                                         <MessageCircle className="w-4 h-4 text-slate-400" />
                                                         Message Creator
                                                     </button>
+
+                                                    {["CONFIRMED", "COMPLETED"].includes(booking.rawStatus) && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                setReviewingBooking({
+                                                                    id: booking.id,
+                                                                    creatorName: booking.creator.name
+                                                                });
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#16A34A] hover:bg-green-50 rounded-xl transition-all text-left mt-1 border-t border-slate-50 pt-3"
+                                                        >
+                                                            <Star className="w-4 h-4 text-[#16A34A] fill-[#16A34A]" />
+                                                            Leave a Review
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -226,6 +251,16 @@ export default function MyBookingsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Create Review Modal */}
+            {reviewingBooking && (
+                <CreateReviewModal 
+                    isOpen={!!reviewingBooking}
+                    onClose={() => setReviewingBooking(null)}
+                    bookingId={reviewingBooking.id}
+                    creatorName={reviewingBooking.creatorName}
+                />
+            )}
         </div>
     );
 }

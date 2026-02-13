@@ -12,7 +12,8 @@ import {
     CreditCard,
     Star,
     CheckCircle2,
-    ArrowUpRight
+    ArrowUpRight,
+    MessageSquare
 } from "lucide-react";
 
 import { useState } from "react";
@@ -50,13 +51,13 @@ export default function ClientDashboardPage() {
                 <div className="lg:col-span-8 space-y-8">
 
                     {/* Performance Metrics Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                         <StatsCard
-                            title="Active Bookings"
-                            value={isLoading ? "..." : stats.activeBookings?.toString() || "0"}
+                            title="Total Bookings"
+                            value={isLoading ? "..." : stats.totalBookings?.toString() || "0"}
                             trend=""
                             trendType="up"
-                            description="Ongoing"
+                            description="All time"
                             icon={CalendarCheck}
                         />
                         <StatsCard
@@ -68,20 +69,12 @@ export default function ClientDashboardPage() {
                             icon={CreditCard}
                         />
                         <StatsCard
-                            title="Pending Reviews"
-                            value={isLoading ? "..." : stats.pendingReviews?.toString() || "0"}
+                            title="Total Messages"
+                            value={isLoading ? "..." : stats.totalMessages?.toString() || "0"}
                             trend=""
                             trendType="up"
-                            description="Feedback"
-                            icon={Star}
-                        />
-                        <StatsCard
-                            title="Completed Orders"
-                            value={isLoading ? "..." : stats.completedOrders?.toString() || "0"}
-                            trend=""
-                            trendType="down"
-                            description="Total"
-                            icon={CheckCircle2}
+                            description="Chats"
+                            icon={MessageSquare}
                         />
                     </div>
 
@@ -106,8 +99,8 @@ export default function ClientDashboardPage() {
 
                     {/* Schedule Manager */}
                     <div className="bg-white p-2 rounded-[40px] border border-slate-100">
-                        <CalendarWidget 
-                            events={events} 
+                        <CalendarWidget
+                            events={events}
                             currentMonth={month}
                             currentYear={year}
                             onNavigate={handleNavigate}

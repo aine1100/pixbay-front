@@ -16,6 +16,7 @@ import { useBookingDetails, useUpdateBookingStatus } from "@/features/bookings/h
 import { Loading } from "@/components/ui/loading";
 import { toast } from "react-hot-toast";
 import { ProjectMediaGallery } from "@/features/bookings/components/ProjectMediaGallery";
+import { CreateReviewModal } from "@/features/reviews/components/CreateReviewModal";
 
 export default function BookingDetailsPage() {
     const params = useParams();
@@ -24,6 +25,7 @@ export default function BookingDetailsPage() {
 
     const { data: booking, isLoading, error } = useBookingDetails(id);
     const updateStatusMutation = useUpdateBookingStatus();
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
     // Generate calendar days for a fixed month (June 2026) for demo (if needed for picker later)
     const calendarDays = useMemo(() => {
@@ -241,13 +243,22 @@ export default function BookingDetailsPage() {
 
                             {/* Booking Management Actions */}
                             <div className="space-y-3">
-                                {booking.status === "CONFIRMED" && (
                                     <button 
                                         onClick={handlePayment}
                                         className="w-full h-14 bg-primary text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em]  hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                     >
                                         <Zap className="w-4 h-4" />
                                         Complete Payment
+                                    </button>
+                                
+
+                                {["CONFIRMED", "COMPLETED"].includes(booking.status) && (
+                                    <button 
+                                        onClick={() => setIsReviewModalOpen(true)}
+                                        className="w-full h-14 bg-[#16A34A] text-white rounded-2xl text-xs font-bold uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-green-200"
+                                    >
+                                        <Star className="w-4 h-4 fill-white" />
+                                        Leave a Review
                                     </button>
                                 )}
 
@@ -313,6 +324,16 @@ export default function BookingDetailsPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Create Review Modal */}
+            {booking.status === "COMPLETED" && (
+                <CreateReviewModal 
+                    isOpen={isReviewModalOpen}
+                    onClose={() => setIsReviewModalOpen(false)}
+                    bookingId={booking.id}
+                    creatorName={`${creatorUser.firstName} ${creatorUser.lastName}`}
+                />
+            )}
         </div>
     );
 }

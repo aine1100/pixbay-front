@@ -69,11 +69,19 @@ export default function CreatorHelpPage() {
     const [message, setMessage] = useState("");
     const submitTicket = useSubmitTicket();
     const { data: ticketsData, isLoading: isTicketsLoading } = useMyTickets();
-    const tickets = ticketsData?.data || [];
+    const tickets = Array.isArray(ticketsData)
+        ? ticketsData
+        : (ticketsData?.data || ticketsData?.tickets || []);
 
-    // Paginated Tickets
-    const totalPages = Math.ceil(tickets.length / TICKETS_PER_PAGE);
-    const paginatedTickets = tickets.slice(
+    // Filtered Tickets based on Search
+    const filteredTickets = tickets.filter((ticket: any) =>
+        ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.message.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Paginated Tickets based on Filtered List
+    const totalPages = Math.ceil(filteredTickets.length / TICKETS_PER_PAGE);
+    const paginatedTickets = filteredTickets.slice(
         (currentPage - 1) * TICKETS_PER_PAGE,
         currentPage * TICKETS_PER_PAGE
     );
@@ -95,10 +103,10 @@ export default function CreatorHelpPage() {
         }
     };
 
-    // Reset page when data changes
+    // Reset page when search or tab changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [tickets.length]);
+    }, [searchQuery, activeTab]);
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -163,6 +171,10 @@ export default function CreatorHelpPage() {
                                     <div className="py-12 text-center text-slate-500 font-medium">
                                         You haven&apos;t submitted any support requests yet.
                                     </div>
+                                ) : filteredTickets.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-500 font-medium">
+                                        No support requests found matching &quot;{searchQuery}&quot;
+                                    </div>
                                 ) : (
                                     <>
                                         <div className="space-y-4">
@@ -222,7 +234,7 @@ export default function CreatorHelpPage() {
                                         {totalPages > 1 && (
                                             <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
                                                 <p className="text-[13px] text-slate-500 font-medium">
-                                                    Showing <span className="text-slate-900">{(currentPage - 1) * TICKETS_PER_PAGE + 1}</span> to <span className="text-slate-900">{Math.min(currentPage * TICKETS_PER_PAGE, tickets.length)}</span> of <span className="text-slate-900">{tickets.length}</span> tickets
+                                                    Showing <span className="text-slate-900">{(currentPage - 1) * TICKETS_PER_PAGE + 1}</span> to <span className="text-slate-900">{Math.min(currentPage * TICKETS_PER_PAGE, filteredTickets.length)}</span> of <span className="text-slate-900">{filteredTickets.length}</span> tickets
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <button

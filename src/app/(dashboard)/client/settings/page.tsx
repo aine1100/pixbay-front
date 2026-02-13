@@ -21,7 +21,8 @@ import {
     Tablet,
     LogOut,
     ChevronDown,
-    Check
+    Check,
+    Plus
 } from "lucide-react";
 import NextImage from "next/image";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ import { useUpdateProfile, useUserSessions, useRevokeSession } from "@/features/
 import { Loading } from "@/components/ui/loading";
 import { authService } from "@/features/auth/services/auth.service";
 import { toast } from "react-hot-toast";
+import { userService } from "@/features/user/services/user.service";
 
 const SETTINGS_TABS = [
     { id: "profile", label: "My Profile", icon: UserIcon },
@@ -70,14 +72,18 @@ export default function SettingsPage() {
         }
     }, [profile, isEditingProfile, isEditingAddress, editedUser]);
 
+    // State for image upload
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const handleUpdate = async (data?: any) => {
         try {
             const rawData = data || editedUser;
             // Filter out read-only fields that Prisma might complain about
-            const { 
-                id, email, role, isVerified, isActive, createdAt, updatedAt, 
-                passwordHash, resetToken, resetTokenExpires, otp, otpExpires, 
-                lastLoginAt, creatorProfile, ...updateData 
+            const {
+                id, email, role, isVerified, isActive, createdAt, updatedAt,
+                passwordHash, resetToken, resetTokenExpires, otp, otpExpires,
+                lastLoginAt, creatorProfile, ...updateData
             } = rawData;
 
             await updateProfile.mutateAsync(updateData);
@@ -143,7 +149,7 @@ export default function SettingsPage() {
                                 <h2 className="text-lg font-semibold text-slate-900 px-1">My Profile</h2>
                                 <div className="bg-white rounded-[32px] border border-slate-100 p-8 flex items-center justify-between group">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-50 relative bg-slate-100">
+                                        <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-slate-50 relative bg-slate-100 group/avatar">
                                             {userData.profilePicture ? (
                                                 <NextImage
                                                     src={userData.profilePicture}
@@ -156,6 +162,42 @@ export default function SettingsPage() {
                                                     {userData.firstName?.[0]}{userData.lastName?.[0]}
                                                 </div>
                                             )}
+
+                                            {/* Hidden File Input */}
+                                            <input
+                                                type="file"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    try {
+                                                        setIsUploadingImage(true);
+                                                        await userService.uploadProfilePicture(file);
+                                                        await updateProfile.mutateAsync({}); // Using this to trigger cache invalidation
+                                                        toast.success("Profile picture updated!");
+                                                    } catch (error) {
+                                                        toast.error("Failed to upload image");
+                                                    } finally {
+                                                        setIsUploadingImage(false);
+                                                    }
+                                                }}
+                                            />
+
+                                            {/* Upload Overlay */}
+                                            <button
+                                                onClick={() => fileInputRef.current?.click()}
+                                                disabled={isUploadingImage}
+                                                className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity disabled:opacity-50"
+                                            >
+                                                {isUploadingImage ? (
+                                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                ) : (
+                                                    <Plus className="w-6 h-6 text-white" />
+                                                )}
+                                            </button>
                                         </div>
                                         <div className="space-y-1">
                                             <h3 className="text-lg font-semibold text-slate-900">{fullName}</h3>
@@ -166,7 +208,10 @@ export default function SettingsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <button className="flex items-center gap-2 px-5 h-10 bg-primary/10 text-primary rounded-xl font-semibold text-[13px] hover:bg-primary/20 transition-all">
+                                    <button 
+                                        onClick={() => setIsEditingProfile(true)}
+                                        className="flex items-center gap-2 px-5 h-10 bg-primary/10 text-primary rounded-xl font-semibold text-[13px] hover:bg-primary/20 transition-all"
+                                    >
                                         Edit
                                         <Edit3 className="w-4 h-4" />
                                     </button>
@@ -177,7 +222,7 @@ export default function SettingsPage() {
                             <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-lg font-semibold text-slate-900">Personal Info</h2>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             if (isEditingProfile) {
                                                 handleUpdate();
@@ -194,37 +239,69 @@ export default function SettingsPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                                     {isEditingProfile ? (
                                         <>
+                                            {/* Profile Photo Field */}
+                                            <div className="space-y-1.5 md:col-span-2 border-b border-slate-50 pb-6">
+                                                <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide px-1">Profile Photo</p>
+                                                <div className="flex items-center gap-4 mt-2">
+                                                    <div className="w-16 h-16 rounded-full overflow-hidden border border-slate-100 relative bg-slate-50">
+                                                        {userData.profilePicture ? (
+                                                            <NextImage src={userData.profilePicture} alt="Profile" fill className="object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-xl font-bold text-slate-300">
+                                                                {userData.firstName?.[0]}{userData.lastName?.[0]}
+                                                            </div>
+                                                        )}
+                                                        {isUploadingImage && (
+                                                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                                                                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            disabled={isUploadingImage}
+                                                            className="px-4 h-9 bg-slate-900 text-white rounded-xl font-semibold text-[13px] hover:bg-slate-800 transition-all disabled:opacity-50"
+                                                        >
+                                                            {isUploadingImage ? "Uploading..." : "Change Photo"}
+                                                        </button>
+                                                        <p className="text-[11px] text-slate-400 font-medium px-1">JPG, PNG or GIF. Max 5MB.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">First Name</p>
-                                                <input 
-                                                    type="text" 
-                                                    value={editedUser?.firstName || ""} 
+                                                <input
+                                                    type="text"
+                                                    value={editedUser?.firstName || ""}
                                                     onChange={(e) => setEditedUser({ ...editedUser, firstName: e.target.value })}
                                                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:border-primary outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">Last Name</p>
-                                                <input 
-                                                    type="text" 
-                                                    value={editedUser?.lastName || ""} 
+                                                <input
+                                                    type="text"
+                                                    value={editedUser?.lastName || ""}
                                                     onChange={(e) => setEditedUser({ ...editedUser, lastName: e.target.value })}
                                                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:border-primary outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">Gender</p>
-                                                <ModernSelect 
-                                                    value={editedUser?.gender || "Select Gender"} 
+                                                <ModernSelect
+                                                    value={editedUser?.gender || "Select Gender"}
                                                     onChange={(val) => setEditedUser({ ...editedUser, gender: val })}
                                                     options={["Male", "Female", "Other"]}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">Phone Number</p>
-                                                <input 
-                                                    type="text" 
-                                                    value={editedUser?.phoneNumber || ""} 
+                                                <input
+                                                    type="text"
+                                                    value={editedUser?.phoneNumber || ""}
                                                     onChange={(e) => setEditedUser({ ...editedUser, phoneNumber: e.target.value })}
                                                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:border-primary outline-none"
                                                 />
@@ -252,7 +329,7 @@ export default function SettingsPage() {
                             <div className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                                 <div className="flex items-center justify-between">
                                     <h2 className="text-lg font-semibold text-slate-900">Address</h2>
-                                    <button 
+                                    <button
                                         onClick={() => {
                                             if (isEditingAddress) {
                                                 handleUpdate();
@@ -271,18 +348,18 @@ export default function SettingsPage() {
                                         <>
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">Country</p>
-                                                <input 
-                                                    type="text" 
-                                                    value={editedUser?.country || ""} 
+                                                <input
+                                                    type="text"
+                                                    value={editedUser?.country || ""}
                                                     onChange={(e) => setEditedUser({ ...editedUser, country: e.target.value })}
                                                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:border-primary outline-none"
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
                                                 <p className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">City</p>
-                                                <input 
-                                                    type="text" 
-                                                    value={editedUser?.city || ""} 
+                                                <input
+                                                    type="text"
+                                                    value={editedUser?.city || ""}
                                                     onChange={(e) => setEditedUser({ ...editedUser, city: e.target.value })}
                                                     className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm focus:border-primary outline-none"
                                                 />
@@ -488,7 +565,7 @@ export default function SettingsPage() {
                                     <h3 className="text-md font-semibold text-slate-900">Active Sessions</h3>
                                     {sessions?.pagination?.totalPages > 1 && (
                                         <div className="flex items-center gap-2">
-                                            <button 
+                                            <button
                                                 onClick={() => setSessionPage(prev => Math.max(1, prev - 1))}
                                                 disabled={sessionPage === 1 || isSessionsLoading}
                                                 className="p-2 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
@@ -498,7 +575,7 @@ export default function SettingsPage() {
                                             <span className="text-[13px] font-semibold text-slate-600">
                                                 {sessionPage} / {sessions.pagination.totalPages}
                                             </span>
-                                            <button 
+                                            <button
                                                 onClick={() => setSessionPage(prev => Math.min(sessions.pagination.totalPages, prev + 1))}
                                                 disabled={sessionPage === sessions.pagination.totalPages || isSessionsLoading}
                                                 className="p-2 rounded-lg hover:bg-slate-50 disabled:opacity-30 transition-all"
@@ -523,8 +600,8 @@ export default function SettingsPage() {
                                                 isCurrent={false} // Currently not tracking current session ID
                                                 icon={
                                                     session.deviceInfo?.toLowerCase().includes("mobile") ? <Smartphone className="w-5 h-5 text-slate-400" /> :
-                                                    session.deviceInfo?.toLowerCase().includes("tablet") ? <Tablet className="w-5 h-5 text-slate-400" /> :
-                                                    <Laptop className="w-5 h-5 text-slate-400" />
+                                                        session.deviceInfo?.toLowerCase().includes("tablet") ? <Tablet className="w-5 h-5 text-slate-400" /> :
+                                                            <Laptop className="w-5 h-5 text-slate-400" />
                                                 }
                                                 onRevoke={() => revokeSession.mutate(session.id)}
                                             />
@@ -538,6 +615,24 @@ export default function SettingsPage() {
                     )}
                 </div>
             </div>
+            {/* Profile Upload Modal */}
+            {isUploadingImage && (
+                <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[32px] w-full max-w-sm p-8 space-y-6 text-center shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                            <Plus className="w-10 h-10 text-primary animate-pulse" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-xl font-semibold text-slate-900">Uploading Profile Photo</h3>
+                            <p className="text-slate-500 text-sm">Please wait while we process and secure your new profile picture.</p>
+                        </div>
+                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div className="bg-primary h-full w-1/2 rounded-full animate-[progress_2s_ease-in-out_infinite]" />
+                        </div>
+                        <p className="text-[12px] text-slate-400 font-medium tracking-wide uppercase">Processing ...</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -622,7 +717,7 @@ function SessionItem({ device, location, time, isCurrent, icon, onRevoke }: { de
                 </div>
             </div>
             {!isCurrent && onRevoke && (
-                <button 
+                <button
                     onClick={onRevoke}
                     className="p-2 text-slate-400 hover:text-red-500 transition-colors"
                 >
@@ -686,4 +781,17 @@ function ModernSelect({ value, onChange, options }: { value: string, onChange: (
             )}
         </div>
     );
+}
+
+const styles = `
+    @keyframes progress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(200%); }
+    }
+`;
+
+if (typeof document !== 'undefined') {
+    const styleTag = document.createElement('style');
+    styleTag.textContent = styles;
+    document.head.appendChild(styleTag);
 }

@@ -69,11 +69,23 @@ export default function HelpPage() {
     const [message, setMessage] = useState("");
     const submitTicket = useSubmitTicket();
     const { data: ticketsData, isLoading: isTicketsLoading } = useMyTickets();
-    const tickets = ticketsData?.data || [];
 
-    // Paginated Tickets
-    const totalPages = Math.ceil(tickets.length / TICKETS_PER_PAGE);
-    const paginatedTickets = tickets.slice(
+    // Support Service returns response.data || response
+    // If backend returns { success: true, data: tickets }, getMyTickets returns tickets (array)
+    // If it returns { success: true, tickets: [...] }, it returns the object
+    const tickets = Array.isArray(ticketsData)
+        ? ticketsData
+        : (ticketsData?.data || ticketsData?.tickets || []);
+
+    // Filtered Tickets based on Search
+    const filteredTickets = tickets.filter((ticket: any) =>
+        ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        ticket.message.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Paginated Tickets based on Filtered List
+    const totalPages = Math.ceil(filteredTickets.length / TICKETS_PER_PAGE);
+    const paginatedTickets = filteredTickets.slice(
         (currentPage - 1) * TICKETS_PER_PAGE,
         currentPage * TICKETS_PER_PAGE
     );
@@ -95,10 +107,10 @@ export default function HelpPage() {
         }
     };
 
-    // Reset page when data changes
+    // Reset page when search or tab changes
     useEffect(() => {
         setCurrentPage(1);
-    }, [tickets.length]);
+    }, [searchQuery, activeTab]);
 
     return (
         <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -163,6 +175,10 @@ export default function HelpPage() {
                                     <div className="py-12 text-center text-slate-500 font-medium">
                                         You haven&apos;t submitted any support requests yet.
                                     </div>
+                                ) : filteredTickets.length === 0 ? (
+                                    <div className="py-12 text-center text-slate-500 font-medium">
+                                        No support requests found matching &quot;{searchQuery}&quot;
+                                    </div>
                                 ) : (
                                     <>
                                         <div className="space-y-4">
@@ -179,7 +195,7 @@ export default function HelpPage() {
                                                             <span className={cn(
                                                                 "px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider",
                                                                 ticket.status === "RESOLVED" ? "bg-green-100 text-green-600" :
-                                                                ticket.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
+                                                                    ticket.status === "IN_PROGRESS" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
                                                             )}>
                                                                 {ticket.status}
                                                             </span>
@@ -192,7 +208,7 @@ export default function HelpPage() {
                                                         </div>
                                                     </div>
                                                     <p className="text-[14px] text-slate-600 font-medium line-clamp-2">{ticket.message}</p>
-                                                    
+
                                                     {!ticket.adminNotified && ticket.notificationError && (
                                                         <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-[12px] font-semibold">
                                                             <ShieldCheck className="w-4 h-4 mt-0.5 shrink-0" />
@@ -202,7 +218,7 @@ export default function HelpPage() {
                                                             </div>
                                                         </div>
                                                     )}
-                                                    
+
                                                     {ticket.adminNotified ? (
                                                         <div className="flex items-center gap-1.5 text-green-600 text-[12px] font-semibold">
                                                             <Check className="w-4 h-4" />
@@ -222,7 +238,7 @@ export default function HelpPage() {
                                         {totalPages > 1 && (
                                             <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
                                                 <p className="text-[13px] text-slate-500 font-medium">
-                                                    Showing <span className="text-slate-900">{(currentPage - 1) * TICKETS_PER_PAGE + 1}</span> to <span className="text-slate-900">{Math.min(currentPage * TICKETS_PER_PAGE, tickets.length)}</span> of <span className="text-slate-900">{tickets.length}</span> tickets
+                                                    Showing <span className="text-slate-900">{(currentPage - 1) * TICKETS_PER_PAGE + 1}</span> to <span className="text-slate-900">{Math.min(currentPage * TICKETS_PER_PAGE, filteredTickets.length)}</span> of <span className="text-slate-900">{filteredTickets.length}</span> tickets
                                                 </p>
                                                 <div className="flex items-center gap-2">
                                                     <button

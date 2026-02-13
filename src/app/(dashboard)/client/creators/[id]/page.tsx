@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback } from "react";
+import { useState,useMemo, useEffect, useCallback } from "react";
 import NextImage from "next/image";
 import {
     BadgeCheck,
@@ -27,6 +27,8 @@ import { useCreatorProfile } from "@/features/creators/hooks/useCreators";
 import { Loading } from "@/components/ui/loading";
 import { BookingModal } from "@/features/bookings/components/BookingModal";
 import { chatService } from "@/features/chat/services/chat.service";
+import { useBookings } from "@/features/bookings/hooks/useBookings";
+import { CreateReviewModal } from "@/features/reviews/components/CreateReviewModal";
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -36,6 +38,19 @@ export default function CreatorProfilePage() {
     const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [reviewingBooking, setReviewingBooking] = useState<{ id: string } | null>(null);
+    
+    const { data: allBookings } = useBookings();
+    
+    // Find a completed booking for this specific creator that hasn't been reviewed
+    // In a real app, we'd check if a review already exists on the booking object
+    const eligibleBooking = useMemo(() => {
+        if (!allBookings || !creator) return null;
+        return allBookings.find((b: any) => 
+            b.creatorId === creator.id && 
+            ["CONFIRMED", "COMPLETED"].includes(b.status)
+        );
+    }, [allBookings, creator]);
 
     // Map backend data to UI-friendly structure
     const displayData = creator ? {
@@ -210,7 +225,16 @@ export default function CreatorProfilePage() {
                                     <MessageSquare className="w-5 h-5 text-slate-400" />
                                     <span className="text-xl font-semibold">{displayData.reviewsCount}</span>
                                 </div>
+                                
                             </div>
+                            {eligibleBooking && (
+                                    <button 
+                                        onClick={() => setReviewingBooking({ id: eligibleBooking.id })}
+                                        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-semibold  tracking-wider hover:bg-green-700 transition-all border border-green-100"
+                                    >
+                                        Add Review
+                                    </button>
+                                )}
                         </div>
 
                         {/* More About Me Section */}
@@ -590,6 +614,16 @@ export default function CreatorProfilePage() {
                         pricing: displayData.pricing,
                         category: displayData.role
                     }}
+                />
+            )}
+
+            {/* Create Review Modal */}
+            {eligibleBooking && (
+                <CreateReviewModal 
+                    isOpen={!!reviewingBooking}
+                    onClose={() => setReviewingBooking(null)}
+                    bookingId={eligibleBooking.id}
+                    creatorName={displayData.name}
                 />
             )}
         </div>

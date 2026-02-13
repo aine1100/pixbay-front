@@ -19,5 +19,12 @@ export const userService = {
     async revokeSession(sessionId: string) {
         const response = await api.delete(`/users/me/sessions/${sessionId}`);
         return response.data || response;
+    },
+
+    async uploadProfilePicture(file: File) {
+        const formData = new FormData();
+        formData.append("profilePicture", file);
+        const response = await api.patch("/users/me/profile-picture", formData);
+        return response.data || response;
     }
 };

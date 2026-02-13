@@ -214,7 +214,7 @@ export default function DashboardLayout({
                             >
                                 <div className="w-10 h-10 rounded-full bg-slate-200 border border-slate-100 overflow-hidden relative transition-transform group-hover:scale-105">
                                     <Image
-                                        src={displayUser?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"}
+                                        src={displayUser?.profilePicture || displayUser?.avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=150&h=150&auto=format&fit=crop"}
                                         alt="Profile"
                                         fill
                                         className="object-cover"
