@@ -222,11 +222,11 @@ export function RegisterForm() {
             </div>
 
             {/* Error Message */}
-            {error && (
+            {/* {error && (
                 <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-500 text-sm border border-red-100">
                     {error}
                 </div>
-            )}
+            )} */}
 
             <Button
                 type="submit"

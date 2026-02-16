@@ -4,6 +4,8 @@ import { MessageBubble } from './MessageBubble';
 import { ChatInput } from './ChatInput';
 import { Loader2, User } from 'lucide-react';
 import { Chat } from '../services/chat.service';
+import { format, isToday, isYesterday, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useUserStore } from '@/features/user/store/userStore';
 
 interface ChatWindowProps {
@@ -110,13 +112,53 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ activeChat, isOtherUserO
                                 </p>
                             </div>
                         )}
-                        {messages.map((msg) => (
-                            <MessageBubble
-                                key={msg.id}
-                                message={msg}
-                                isOwn={msg.senderId === user?.id}
-                            />
-                        ))}
+                        
+                        {(() => {
+                            const groups: { [key: string]: typeof messages } = {};
+                            messages.forEach(msg => {
+                                const date = startOfDay(new Date(msg.sentAt)).toISOString();
+                                if (!groups[date]) groups[date] = [];
+                                groups[date].push(msg);
+                            });
+
+                            return Object.keys(groups).sort().map(dateStr => {
+                                const date = new Date(dateStr);
+                                let label = format(date, 'MMMM d, yyyy');
+                                let isHighlighted = false;
+
+                                if (isToday(date)) {
+                                    label = 'Today';
+                                    isHighlighted = true;
+                                } else if (isYesterday(date)) {
+                                    label = 'Yesterday';
+                                }
+
+                                return (
+                                    <div key={dateStr} className="space-y-2">
+                                        <div className="flex items-center justify-center my-6">
+                                            <div className="h-[1px] flex-1 bg-slate-100" />
+                                            <span className={cn(
+                                                "mx-4 text-[11px] font-semibold px-3 py-1 rounded-full border",
+                                                isHighlighted 
+                                                    ? "bg-slate-900 text-white border-slate-900" 
+                                                    : "bg-white text-slate-500 border-slate-100"
+                                            )}>
+                                                {label}
+                                            </span>
+                                            <div className="h-[1px] flex-1 bg-slate-100" />
+                                        </div>
+                                        {groups[dateStr].map((msg) => (
+                                            <MessageBubble
+                                                key={msg.id}
+                                                message={msg}
+                                                isOwn={msg.senderId === user?.id}
+                                            />
+                                        ))}
+                                    </div>
+                                );
+                            });
+                        })()}
+
                         {isTyping && (
                             <div className="flex justify-start mb-4">
                                 <div className="bg-slate-50 border border-slate-100 rounded-[20px] rounded-tl-none px-4 py-2.5 flex items-center gap-2">
