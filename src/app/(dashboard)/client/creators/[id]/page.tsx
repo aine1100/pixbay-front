@@ -1,5 +1,5 @@
 "use client"
-import { useState,useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import NextImage from "next/image";
 import {
     BadgeCheck,
@@ -29,6 +29,11 @@ import { BookingModal } from "@/features/bookings/components/BookingModal";
 import { chatService } from "@/features/chat/services/chat.service";
 import { useBookings } from "@/features/bookings/hooks/useBookings";
 import { CreateReviewModal } from "@/features/reviews/components/CreateReviewModal";
+import { PaymentModal } from "@/features/payment/components/PaymentModal";
+import { paymentService } from "@/features/payment/services/payment.service";
+import { toast } from "react-hot-toast";
+import { useSocket } from "@/features/chat/hooks/useSocket";
+import { Clock } from "lucide-react";
 
 export default function CreatorProfilePage() {
     const params = useParams();
@@ -39,18 +44,72 @@ export default function CreatorProfilePage() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
     const [reviewingBooking, setReviewingBooking] = useState<{ id: string } | null>(null);
-    
-    const { data: allBookings } = useBookings();
-    
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isPaying, setIsPaying] = useState(false);
+
+    const { data: allBookings, refetch: refetchBookings } = useBookings();
+    const { socket } = useSocket();
+
+    // Find a booking that needs payment
+    const payableBooking = useMemo(() => {
+        if (!allBookings || !creator) return null;
+        return allBookings.find((b: any) =>
+            b.creatorId === creator.id &&
+            b.status === "CONFIRMED" &&
+            b.paymentStatus !== "FULLY_PAID"
+        );
+    }, [allBookings, creator]);
+
     // Find a completed booking for this specific creator that hasn't been reviewed
-    // In a real app, we'd check if a review already exists on the booking object
     const eligibleBooking = useMemo(() => {
         if (!allBookings || !creator) return null;
-        return allBookings.find((b: any) => 
-            b.creatorId === creator.id && 
+        return allBookings.find((b: any) =>
+            b.creatorId === creator.id &&
             ["CONFIRMED", "COMPLETED"].includes(b.status)
         );
     }, [allBookings, creator]);
+
+    // Socket.io listener for real-time payment confirmation
+    useEffect(() => {
+        if (socket && payableBooking) {
+            socket.on("payment_completed", (data: any) => {
+                if (data.bookingId === payableBooking.id && data.status === "FULLY_PAID") {
+                    toast.success("Payment Successful!");
+                    refetchBookings();
+                    setIsPaying(false);
+                    setIsPaymentModalOpen(false);
+                }
+            });
+            return () => { socket.off("payment_completed"); };
+        }
+    }, [socket, payableBooking, refetchBookings]);
+
+    const initiatePayment = async (payload: any) => {
+        if (!payableBooking) return;
+        setIsPaying(true);
+        try {
+            const response = await paymentService.initializePayment(payableBooking.id, payload);
+            if (response.success) {
+                if (response.data.paymentLink) {
+                    window.location.href = response.data.paymentLink;
+                    return;
+                }
+                if (payload.type === 'card' && response.data.status === "success") {
+                    toast.success("Payment Successful!");
+                    refetchBookings();
+                    setIsPaying(false);
+                    setIsPaymentModalOpen(false);
+                }
+            } else {
+                toast.error("Payment Failed!");
+                setIsPaying(false);
+            }
+        } catch (error: any) {
+            console.error("Payment Error:", error);
+            toast.error("Payment Failed!");
+            setIsPaying(false);
+        }
+    };
 
     // Map backend data to UI-friendly structure
     const displayData = creator ? {
@@ -148,8 +207,8 @@ export default function CreatorProfilePage() {
 
     if (isError || !displayData) return (
         <div className="min-h-[60vh] flex flex-col items-center justify-center">
-            <p className="text-red-500 font-semibold text-lg">Failed to load creator profile.</p>
-            <Link href="/client/find-creators" className="mt-4 text-primary font-medium hover:underline">
+            <p className="text-red-500 font-medium text-lg">Failed to load creator profile.</p>
+            <Link href="/client/find-creators" className="mt-4 text-primary font-medium hover:underline transition-all">
                 Back to discovery
             </Link>
         </div>
@@ -171,11 +230,11 @@ export default function CreatorProfilePage() {
                     Back to discovery
                 </Link>
                 <div className="flex items-center gap-4">
-                    <button className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors font-medium text-sm border border-slate-200 px-4 py-2 rounded-xl bg-white">
+                    <button className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors font-medium text-sm border border-slate-100 px-4 py-2 rounded-xl bg-white">
                         <Share2 className="w-4 h-4" />
                         Share Profile
                     </button>
-                    <button className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors font-medium text-sm border border-slate-200 px-4 py-2 rounded-xl bg-white">
+                    <button className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors font-medium text-sm border border-slate-100 px-4 py-2 rounded-xl bg-white">
                         <Heart className="w-4 h-4" />
                         Save to favorites
                     </button>
@@ -196,7 +255,7 @@ export default function CreatorProfilePage() {
                             </div>
                             <div>
                                 <div className="flex items-center justify-center gap-2">
-                                    <h1 className="text-md font-semibold text-slate-900">{displayData.name}</h1>
+                                    <h1 className="text-md font-medium text-slate-900">{displayData.name}</h1>
                                     <BadgeCheck className="w-6 h-6 text-blue-500 fill-blue-500/10" />
                                     <div className="w-6 h-5 relative overflow-hidden rounded-sm border border-slate-100">
                                         <NextImage
@@ -216,30 +275,30 @@ export default function CreatorProfilePage() {
                                 <div className="flex items-center gap-1.5">
                                     <div className="flex items-center text-yellow-500">
                                         {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className={`w-5 h-5 ${i < Math.floor(displayData.rating) ? "fill-current" : "text-yellow-500/30 fill-current"}`} />
+                                            <Star key={i} className={`w-5 h-5 ${i < Math.floor(displayData.rating) ? "fill-current" : "text-yellow-500/10 fill-current"}`} />
                                         ))}
                                     </div>
-                                    <span className="text-xl font-semibold text-slate-900">{displayData.rating.toFixed(1)}</span>
+                                    <span className="text-xl font-medium text-slate-900">{displayData.rating.toFixed(1)}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-700">
                                     <MessageSquare className="w-5 h-5 text-slate-400" />
-                                    <span className="text-xl font-semibold">{displayData.reviewsCount}</span>
+                                    <span className="text-xl font-medium">{displayData.reviewsCount}</span>
                                 </div>
-                                
+
                             </div>
                             {eligibleBooking && (
-                                    <button 
-                                        onClick={() => setReviewingBooking({ id: eligibleBooking.id })}
-                                        className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-xl text-xs font-semibold  tracking-wider hover:bg-green-700 transition-all border border-green-100"
-                                    >
-                                        Add Review
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => setReviewingBooking({ id: eligibleBooking.id })}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-xl text-xs font-medium tracking-wider hover:bg-green-100 transition-all border border-green-100"
+                                >
+                                    Add Review
+                                </button>
+                            )}
                         </div>
 
                         {/* More About Me Section */}
                         <div className="space-y-6 pt-6 border-t border-slate-50">
-                            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest">More About Me</h3>
+                            <h3 className="text-sm font-medium text-slate-900 uppercase tracking-widest">More About Me</h3>
 
                             <div className="space-y-3">
                                 <div className="flex items-center gap-4 text-slate-600 hover:text-primary transition-colors cursor-pointer group">
@@ -289,7 +348,7 @@ export default function CreatorProfilePage() {
                                         <DollarSign className="w-4 h-4 text-slate-400" />
                                         <span className="text-sm font-medium text-slate-600">Starting Rate</span>
                                     </div>
-                                    <span className="text-md font-bold text-slate-900">{displayData.pricing.currency} {displayData.pricing.hourly.toLocaleString()} / hr</span>
+                                    <span className="text-md font-medium text-slate-900">{displayData.pricing.currency} {displayData.pricing.hourly.toLocaleString()} / hr</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-slate-400" />
@@ -300,12 +359,23 @@ export default function CreatorProfilePage() {
 
                         {/* CTA */}
                         <div className="space-y-4">
-                            <button
-                                onClick={() => setIsBookingModalOpen(true)}
-                                className="w-full h-14 bg-primary text-white rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95 shadow-none"
-                            >
-                                Book creator now
-                            </button>
+                            {payableBooking ? (
+                                <button
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    disabled={isPaying}
+                                    className="w-full h-14 bg-primary text-white rounded-2xl font-medium text-sm uppercase tracking-widest hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {isPaying ? <Clock className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                                    Complete Payment
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsBookingModalOpen(true)}
+                                    className="w-full h-14 bg-primary text-white rounded-2xl font-medium text-sm uppercase tracking-widest hover:bg-primary/90 transition-all active:scale-95"
+                                >
+                                    Book creator now
+                                </button>
+                            )}
                             <button
                                 onClick={async () => {
                                     try {
@@ -315,7 +385,7 @@ export default function CreatorProfilePage() {
                                         console.error("Failed to initiate chat:", error);
                                     }
                                 }}
-                                className="w-full h-14 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl font-semibold text-sm uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95"
+                                className="w-full h-14 bg-slate-50 border border-slate-100 text-slate-900 rounded-2xl font-medium text-sm uppercase tracking-widest hover:bg-slate-100 transition-all active:scale-95"
                             >
                                 Message creator
                             </button>
@@ -327,7 +397,7 @@ export default function CreatorProfilePage() {
                 <div className="lg:col-span-8 space-y-8">
                     {/* Overview */}
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6">
-                        <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
+                        <h2 className="text-xl font-medium text-slate-900">Overview</h2>
                         <p className="text-slate-600 leading-relaxed font-medium">
                             {displayData.overview}
                         </p>
@@ -335,7 +405,7 @@ export default function CreatorProfilePage() {
                         {displayData.specializations.length > 0 && (
                             <div className="flex flex-wrap gap-2 pt-2">
                                 {displayData.specializations.map((spec: string) => (
-                                    <span key={spec} className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs font-semibold uppercase tracking-wider border border-slate-100">
+                                    <span key={spec} className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs font-medium uppercase tracking-wider border border-slate-100">
                                         {spec}
                                     </span>
                                 ))}
@@ -346,16 +416,16 @@ export default function CreatorProfilePage() {
                     {/* Equipment section */}
                     {displayData.equipment.length > 0 && (
                         <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-6">
-                            <h2 className="text-xl font-semibold text-slate-900">Professional Gear</h2>
+                            <h2 className="text-xl font-medium text-slate-900">Professional Gear</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {displayData.equipment.map((item: any, i: number) => (
                                     <div key={i} className="flex items-center gap-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm">
+                                        <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-100">
                                             {displayData.role === "Photographer" ? <Camera className="w-5 h-5 text-primary" /> : <Video className="w-5 h-5 text-primary" />}
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{item.brand || "Professional"}</p>
-                                            <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                                            <p className="text-xs font-medium text-slate-400 uppercase tracking-tighter">{item.brand || "Professional"}</p>
+                                            <p className="text-sm font-medium text-slate-900">{item.name}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -366,7 +436,7 @@ export default function CreatorProfilePage() {
                     {/* External Links Section */}
                     {displayData.externalLinks.length > 0 && (
                         <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
-                            <h2 className="text-xl font-semibold text-slate-900">External Works & Links</h2>
+                            <h2 className="text-xl font-medium text-slate-900">External Works & Links</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {displayData.externalLinks.map((link: any) => (
                                     <a
@@ -374,13 +444,13 @@ export default function CreatorProfilePage() {
                                         href={link.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-100 transition-all group"
+                                        className="flex items-center gap-4 p-5 bg-slate-50/30 rounded-2xl border border-slate-100 hover:border-primary/20 hover:bg-slate-50 transition-all group"
                                     >
-                                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center border border-slate-100 shadow-sm group-hover:scale-110 transition-transform">
+                                        <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center border border-slate-100 group-hover:scale-105 transition-transform">
                                             <Share2 className="w-6 h-6 text-primary" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="font-semibold text-slate-900 truncate">{link.title}</h4>
+                                            <h4 className="font-medium text-slate-900 truncate">{link.title}</h4>
                                             <p className="text-xs text-slate-500 font-medium truncate">{link.description}</p>
                                         </div>
                                         <div className="text-slate-300 group-hover:text-primary transition-colors">
@@ -395,9 +465,9 @@ export default function CreatorProfilePage() {
                     {/* Portfolio */}
                     <section className="bg-white rounded-[32px] border border-slate-100 p-8 space-y-8">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-xl font-semibold text-slate-900">Portfolio</h2>
+                            <h2 className="text-xl font-medium text-slate-900">Portfolio</h2>
                             {displayData.portfolio.length > 6 && (
-                                <button className="text-sm font-semibold text-primary hover:underline">View all work</button>
+                                <button className="text-sm font-medium text-primary hover:underline">View all work</button>
                             )}
                         </div>
 
@@ -446,9 +516,9 @@ export default function CreatorProfilePage() {
 
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <h3 className="text-white font-semibold text-lg">{project.title}</h3>
+                                                    <h3 className="text-white font-medium text-lg">{project.title}</h3>
                                                 </div>
-                                                <p className="text-white/80 text-xs line-clamp-2 leading-relaxed">
+                                                <p className="text-white/80 text-xs line-clamp-2 leading-relaxed font-medium">
                                                     {project.description}
                                                 </p>
                                             </div>
@@ -469,10 +539,10 @@ export default function CreatorProfilePage() {
                         <div className="flex items-center gap-4 pb-4 border-b border-slate-50">
                             <div className="flex items-center gap-2">
                                 <Star className="w-6 h-6 fill-yellow-500 text-yellow-500" />
-                                <span className="text-2xl font-semibold text-slate-900">{displayData.rating.toFixed(1)}</span>
+                                <span className="text-2xl font-medium text-slate-900">{displayData.rating.toFixed(1)}</span>
                             </div>
                             <span className="text-slate-200">|</span>
-                            <span className="text-xl font-semibold text-slate-700">{displayData.reviewsCount} Reviews</span>
+                            <span className="text-xl font-medium text-slate-700">{displayData.reviewsCount} Reviews</span>
                         </div>
 
                         {displayData.reviews.length > 0 ? (
@@ -481,7 +551,7 @@ export default function CreatorProfilePage() {
                                     <div key={review.id} className="p-6 rounded-2xl bg-slate-50/50 border border-slate-100 space-y-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden relative">
+                                                <div className="w-12 h-12 rounded-xl border border-slate-100 overflow-hidden relative">
                                                     <NextImage
                                                         src={review.avatar}
                                                         alt={review.user}
@@ -490,7 +560,7 @@ export default function CreatorProfilePage() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-slate-900">{review.user}</h4>
+                                                    <h4 className="font-medium text-slate-900">{review.user}</h4>
                                                     <p className="text-[11px] font-medium text-slate-500">{review.location} • {review.date}</p>
                                                 </div>
                                             </div>
@@ -525,7 +595,7 @@ export default function CreatorProfilePage() {
                     {/* Header: Title & Close */}
                     <div className="absolute top-0 inset-x-0 p-8 flex items-center justify-between z-50">
                         <div className="flex flex-col">
-                            <h3 className="text-white text-2xl font-semibold">{(displayData.portfolio[selectedProjectIndex] as any).title}</h3>
+                            <h3 className="text-white text-2xl font-medium">{(displayData.portfolio[selectedProjectIndex] as any).title}</h3>
                             <p className="text-white/50 text-sm font-medium">
                                 {(displayData.portfolio[selectedProjectIndex] as any).items[currentImageIndex]?.title || "Work Sample"} • Item {currentImageIndex + 1} of {(displayData.portfolio[selectedProjectIndex] as any).items.length}
                             </p>
@@ -619,11 +689,25 @@ export default function CreatorProfilePage() {
 
             {/* Create Review Modal */}
             {eligibleBooking && (
-                <CreateReviewModal 
+                <CreateReviewModal
                     isOpen={!!reviewingBooking}
                     onClose={() => setReviewingBooking(null)}
                     bookingId={eligibleBooking.id}
                     creatorName={displayData.name}
+                />
+            )}
+
+            {payableBooking && (
+                <PaymentModal
+                    isOpen={isPaymentModalOpen}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    onPaymentInitiate={initiatePayment}
+                    bookingDetails={{
+                        id: payableBooking.id,
+                        amount: payableBooking.pricing.totalAmount,
+                        currency: payableBooking.pricing.currency,
+                        type: payableBooking.category || "Booking Payment"
+                    }}
                 />
             )}
         </div>

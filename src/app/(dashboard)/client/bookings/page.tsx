@@ -8,7 +8,10 @@ import { useBookings } from "@/features/bookings/hooks/useBookings";
 import { Loading } from "@/components/ui/loading";
 import { CreateReviewModal } from "@/features/reviews/components/CreateReviewModal";
 import { chatService } from "@/features/chat/services/chat.service";
-
+import { paymentService } from "@/features/payment/services/payment.service";
+import { PaymentModal } from "@/features/payment/components/PaymentModal";
+import { toast } from "react-hot-toast";
+import { useSocket } from "@/features/chat/hooks/useSocket";
 const FILTER_TABS = ["All", "Approved", "Cancelled", "Pending"];
 
 export default function MyBookingsPage() {
@@ -16,9 +19,12 @@ export default function MyBookingsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [reviewingBooking, setReviewingBooking] = useState<{ id: string, creatorName: string } | null>(null);
+    const [paymentBooking, setPaymentBooking] = useState<any | null>(null);
+    const [isPaying, setIsPaying] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
+    const { socket } = useSocket();
 
-    const { data: rawBookings, isLoading } = useBookings();
+    const { data: rawBookings, isLoading, refetch } = useBookings();
 
     const bookings = useMemo(() => {
         return (rawBookings || []).map((b: any) => ({
@@ -36,7 +42,9 @@ export default function MyBookingsPage() {
             eventTitle: b.category || b.serviceType?.replace('_', ' ') || "Session",
             image: b.heroImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=400",
             location: b.bookingDetails?.location || b.creator?.baseCity || "Remote",
-            createdAt: b.createdAt
+            createdAt: b.createdAt,
+            paymentStatus: b.paymentStatus,
+            pricing: b.pricing
         }));
     }, [rawBookings]);
 
@@ -50,6 +58,21 @@ export default function MyBookingsPage() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Socket.io for real-time payment status
+    useEffect(() => {
+        if (socket) {
+            socket.on("payment_completed", (data: any) => {
+                if (data.status === "FULLY_PAID") {
+                    toast.success("Payment Successful!");
+                    refetch();
+                    setIsPaying(null);
+                    setPaymentBooking(null);
+                }
+            });
+            return () => { socket.off("payment_completed"); };
+        }
+    }, [socket, refetch]);
 
     const filteredBookings = useMemo(() => {
         return bookings.filter((booking: any) => {
@@ -66,6 +89,55 @@ export default function MyBookingsPage() {
             return matchesTab && matchesSearch;
         });
     }, [activeTab, searchQuery, bookings]);
+
+    const handlePayment = (booking: any) => {
+        setPaymentBooking(booking);
+    };
+
+    const initiatePayment = async (payload: any) => {
+        if (!paymentBooking) return;
+
+        setIsPaying(paymentBooking.id);
+        try {
+            const response = await paymentService.initializePayment(paymentBooking.id, payload);
+
+            if (response.success) {
+                const { data } = response;
+
+                // If it's a hosted link redirect
+                if (data.paymentLink) {
+                    window.location.href = data.paymentLink;
+                    return;
+                }
+
+                // If it's a direct charge (MoMo / Card)
+                const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
+
+                if (isConfirmed) {
+                    // For Card, if it's already successful, we show success
+                    if (payload.type === 'card' && data.status === "success") {
+                        toast.success("Payment Successful!");
+                        refetch();
+                        setIsPaying(null);
+                        setPaymentBooking(null);
+                    } else if (payload.type === 'momo') {
+                        // For MoMo, we keep loading until the socket event or manual refresh
+                        // No "initiated" toast as per user request
+                    }
+                } else {
+                    toast.error("Payment Failed!");
+                    setIsPaying(null);
+                }
+            } else {
+                toast.error("Payment Failed!");
+                setIsPaying(null);
+            }
+        } catch (error: any) {
+            console.error("Payment Error:", error);
+            toast.error("Payment Failed!");
+            setIsPaying(null);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -208,8 +280,23 @@ export default function MyBookingsPage() {
                                                         Message Creator
                                                     </button>
 
+                                                    {booking.paymentStatus === "PENDING" && booking.rawStatus !== "CANCELLED" && (
+                                                        <button
+                                                            onClick={() => handlePayment(booking)}
+                                                            disabled={isPaying === booking.id}
+                                                            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-[#FF3B30] hover:bg-red-50 rounded-xl transition-all text-left"
+                                                        >
+                                                            {isPaying === booking.id ? (
+                                                                <Clock className="w-4 h-4 text-slate-400 animate-spin" />
+                                                            ) : (
+                                                                <Clock className="w-4 h-4 text-[#FF3B30]" />
+                                                            )}
+                                                            {isPaying === booking.id ? "Processing..." : "Pay Now"}
+                                                        </button>
+                                                    )}
+
                                                     {["CONFIRMED", "COMPLETED"].includes(booking.rawStatus) && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 setReviewingBooking({
                                                                     id: booking.id,
@@ -254,11 +341,25 @@ export default function MyBookingsPage() {
 
             {/* Create Review Modal */}
             {reviewingBooking && (
-                <CreateReviewModal 
+                <CreateReviewModal
                     isOpen={!!reviewingBooking}
                     onClose={() => setReviewingBooking(null)}
                     bookingId={reviewingBooking.id}
                     creatorName={reviewingBooking.creatorName}
+                />
+            )}
+
+            {paymentBooking && (
+                <PaymentModal
+                    isOpen={!!paymentBooking}
+                    onClose={() => setPaymentBooking(null)}
+                    onPaymentInitiate={initiatePayment}
+                    bookingDetails={{
+                        id: paymentBooking.id,
+                        amount: paymentBooking.price,
+                        currency: paymentBooking.pricing?.currency || "KES",
+                        type: paymentBooking.eventTitle
+                    }}
                 />
             )}
         </div>
