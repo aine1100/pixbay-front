@@ -125,6 +125,7 @@ export default function MyBookingsPage() {
                         // No "initiated" toast as per user request
                     }
                 } else {
+                    
                     toast.error("Payment Failed!");
                     setIsPaying(null);
                 }

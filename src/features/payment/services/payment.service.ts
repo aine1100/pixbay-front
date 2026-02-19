@@ -38,5 +38,12 @@ export const paymentService = {
      */
     async getCreatorPayments(): Promise<any> {
         return await api.get("/payments/creator/history");
+    },
+
+    /**
+     * Validate a payment with OTP
+     */
+    async validatePayment(transactionId: string, otp: string): Promise<any> {
+        return await api.post("/payments/validate", { transactionId, otp });
     }
 };

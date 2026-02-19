@@ -76,38 +76,76 @@ export default function PaymentsPage() {
         if (!selectedPayment) return;
 
         setIsPaying(selectedPayment.id);
+        console.info(`[Payment Flow] Initiating ${payload.type} payment for booking ${selectedPayment.id}...`);
+        
         try {
             const response = await paymentService.initializePayment(selectedPayment.id, payload);
+            console.info(`[Payment Flow] Backend Response:`, response);
             
             if (response.success) {
                 const { data } = response;
+                
+                // Check for payment link (hosted)
                 if (data.paymentLink) {
                     window.location.href = data.paymentLink;
                     return;
                 }
 
+                // Check for OTP requirement
+                if (data.meta?.authorization?.mode === "otp" || data.message?.toLowerCase().includes("otp")) {
+                    console.info("[Payment Flow] OTP required, signaling modal...");
+                    return { 
+                        requiresOtp: true, 
+                        flw_ref: data.data?.flw_ref || data.flw_ref 
+                    };
+                }
+
+                // Check for successful confirmation
                 const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
                 
                 if (isConfirmed) {
-                    if (payload.type === 'card' && data.status === "success") {
+                    if (data.message === "Charge initialted" || payload.type === 'momo') {
+                        toast.success("Payment initiated. Please confirm on your device.");
+                        // Modal should close or wait for socket
+                        setIsPaymentModalOpen(false);
+                    } else {
                         toast.success("Payment Successful!");
                         refetch();
                         setIsPaying(null);
-                    } else if (payload.type === 'momo') {
-                        // Wait for socket confirmation
+                        setIsPaymentModalOpen(false);
                     }
                 } else {
-                    toast.error("Payment Failed!");
+                    const errorMsg = data.message || response.message || "Payment Failed!";
+                    toast.error(errorMsg);
                     setIsPaying(null);
+                    console.warn("[Payment Flow] Payment was not confirmed (Unhandleable state):", data);
                 }
             } else {
-                toast.error("Payment Failed!");
+                toast.error(response.message || "Payment Failed!");
                 setIsPaying(null);
             }
         } catch (error: any) {
             console.error("Payment Error:", error);
             toast.error("Payment Failed!");
             setIsPaying(null);
+        }
+    };
+
+    const handleOtpVerify = async (transactionId: string, otp: string) => {
+        try {
+            const response = await paymentService.validatePayment(transactionId, otp);
+            if (response.success) {
+                toast.success("Payment Verified Successfully!");
+                refetch();
+                setIsPaying(null);
+                setIsPaymentModalOpen(false);
+            } else {
+                toast.error(response.message || "Verification Failed");
+                throw new Error(response.message || "Verification Failed");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to verify payment");
+            throw error;
         }
     };
 
@@ -316,15 +354,16 @@ export default function PaymentsPage() {
 
             {selectedPayment && (
                 <PaymentModal
-                    isOpen={isPaymentModalOpen}
+                    isOpen={!!isPaymentModalOpen}
                     onClose={() => setIsPaymentModalOpen(false)}
-                    onPaymentInitiate={initiatePayment}
                     bookingDetails={{
                         id: selectedPayment.id,
                         amount: selectedPayment.amount,
-                        currency: "RWF",
+                        currency: "RWF", // Standard for these direct payments
                         type: selectedPayment.category || "Booking Payment"
                     }}
+                    onPaymentInitiate={initiatePayment}
+                    onOtpVerify={handleOtpVerify}
                 />
             )}
         </div>

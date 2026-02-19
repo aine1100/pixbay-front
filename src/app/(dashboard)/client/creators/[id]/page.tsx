@@ -89,25 +89,68 @@ export default function CreatorProfilePage() {
         setIsPaying(true);
         try {
             const response = await paymentService.initializePayment(payableBooking.id, payload);
+            console.info(`[Payment Flow] Backend Response:`, response);
+            
             if (response.success) {
-                if (response.data.paymentLink) {
-                    window.location.href = response.data.paymentLink;
+                const { data } = response;
+
+                // Check for payment link (hosted)
+                if (data.paymentLink) {
+                    window.location.href = data.paymentLink;
                     return;
                 }
-                if (payload.type === 'card' && response.data.status === "success") {
-                    toast.success("Payment Successful!");
-                    refetchBookings();
-                    setIsPaying(false);
-                    setIsPaymentModalOpen(false);
+
+                // Check for OTP requirement
+                if (data.meta?.authorization?.mode === "otp" || data.message?.toLowerCase().includes("otp")) {
+                    console.info("[Payment Flow] OTP required, signaling modal...");
+                    return { 
+                        requiresOtp: true, 
+                        flw_ref: data.data?.flw_ref || data.flw_ref 
+                    };
+                }
+
+                // Check for successful confirmation
+                const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
+                
+                if (isConfirmed) {
+                    if (data.message === "Charge initiated" || payload.type === 'momo') {
+                        toast.success("Payment initiated. Please confirm on your device.");
+                        setIsPaymentModalOpen(false);
+                    } else {
+                        toast.success("Payment Successful!");
+                        refetchBookings();
+                        setIsPaymentModalOpen(false);
+                    }
+                } else {
+                    const errorMsg = data.message || response.message || "Payment Failed!";
+                    toast.error(errorMsg);
+                    console.warn("[Payment Flow] Payment was not confirmed (Unhandleable state):", data);
                 }
             } else {
-                toast.error("Payment Failed!");
-                setIsPaying(false);
+                toast.error(response.message || "Payment Failed!");
             }
         } catch (error: any) {
             console.error("Payment Error:", error);
             toast.error("Payment Failed!");
+        } finally {
             setIsPaying(false);
+        }
+    };
+
+    const handleOtpVerify = async (transactionId: string, otp: string) => {
+        try {
+            const response = await paymentService.validatePayment(transactionId, otp);
+            if (response.success) {
+                toast.success("Payment Verified Successfully!");
+                refetchBookings();
+                setIsPaymentModalOpen(false);
+            } else {
+                toast.error(response.message || "Verification Failed");
+                throw new Error(response.message || "Verification Failed");
+            }
+        } catch (error: any) {
+            toast.error(error.message || "Failed to verify payment");
+            throw error;
         }
     };
 
@@ -702,10 +745,11 @@ export default function CreatorProfilePage() {
                     isOpen={isPaymentModalOpen}
                     onClose={() => setIsPaymentModalOpen(false)}
                     onPaymentInitiate={initiatePayment}
+                    onOtpVerify={handleOtpVerify}
                     bookingDetails={{
                         id: payableBooking.id,
-                        amount: payableBooking.pricing.totalAmount,
-                        currency: payableBooking.pricing.currency,
+                        amount: payableBooking.pricing?.totalAmount || 0,
+                        currency: payableBooking.pricing?.currency || "RWF",
                         type: payableBooking.category || "Booking Payment"
                     }}
                 />
