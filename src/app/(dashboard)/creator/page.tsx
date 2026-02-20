@@ -29,9 +29,10 @@ export default function CreatorDashboardPage() {
             {(() => {
                 const creator = user?.creatorProfile;
                 const status = creator?.verificationStatus;
-                const isVerified = creator?.isVerified || false;
+                const isVerified = creator?.isVerified || user?.isVerified || status === "APPROVED";
 
-                if (status === "APPROVED" || isVerified) {
+                // Priority 1: Verified
+                if (isVerified) {
                     return (
                         <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
                             <span className="text-[14px] text-[#A27300] font-medium flex items-center gap-2">
@@ -42,7 +43,8 @@ export default function CreatorDashboardPage() {
                     );
                 }
 
-                if (status === "PENDING" || !status) {
+                // Priority 2: Under Review
+                if (status === "PENDING") {
                     return (
                         <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
                             <span className="text-[14px] text-blue-600 font-medium flex items-center gap-2">
@@ -53,6 +55,7 @@ export default function CreatorDashboardPage() {
                     );
                 }
 
+                // Priority 3: Explicitly REJECTED
                 if (status === "REJECTED") {
                     return (
                         <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">

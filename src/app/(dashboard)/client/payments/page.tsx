@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo,useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, MoreVertical, CheckCircle2, Smartphone, BadgeCheck, Star, CreditCard, Clock } from "lucide-react";
 import NextImage from "next/image";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,7 @@ export default function PaymentsPage() {
             event: b.category || "Session",
             date: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             amount: b.pricing?.totalAmount || 0,
-            status: b.paymentStatus === "FULLY_PAID" ? "Completed" : "Pending",
+            status: (b.paymentStatus === "FULLY_PAID" || b.paymentStatus === "PAID_IN_ESCROW") ? "Completed" : "Pending",
             rating: b.creator?.averageRating || 5,
             isVerified: b.creator?.isVerified,
             bookingNumber: b.bookingNumber
@@ -39,9 +39,9 @@ export default function PaymentsPage() {
     }, [rawBookings]);
 
     // Pending count for the requirement "the payment he must make"
-    const pendingCount = useMemo(() => 
+    const pendingCount = useMemo(() =>
         payments.filter((p: any) => p.status === "Pending").length
-    , [payments]);
+        , [payments]);
 
     const filteredPayments = useMemo(() => {
         if (activeTab === "All") return payments;
@@ -73,65 +73,69 @@ export default function PaymentsPage() {
     }, [socket, refetch]);
 
     const initiatePayment = async (payload: any) => {
-        if (!selectedPayment) return;
+        if (!selectedPayment) return { success: false };
 
         setIsPaying(selectedPayment.id);
         console.info(`[Payment Flow] Initiating ${payload.type} payment for booking ${selectedPayment.id}...`);
-        
+
         try {
             const response = await paymentService.initializePayment(selectedPayment.id, payload);
             console.info(`[Payment Flow] Backend Response:`, response);
-            
+
             if (response.success) {
                 const { data } = response;
-                
-                // Check for payment link (hosted)
+
+                // Handle hosted link redirect
                 if (data.paymentLink) {
                     window.location.href = data.paymentLink;
-                    return;
+                    return { success: true };
                 }
 
-                // Check for OTP requirement
-                if (data.meta?.authorization?.mode === "otp" || data.message?.toLowerCase().includes("otp")) {
-                    console.info("[Payment Flow] OTP required, signaling modal...");
-                    return { 
-                        requiresOtp: true, 
-                        flw_ref: data.data?.flw_ref || data.flw_ref 
-                    };
+                // Check for authorization requirements (PIN/OTP)
+                const authMode = data.meta?.authorization?.mode;
+                if (authMode === 'pin') {
+                    return { requiresPin: true, ...data };
+                }
+                if (authMode === 'otp' || data.message === "Charge initiated") {
+                    return { requiresOtp: true, flw_ref: data.data?.flw_ref || data.flw_ref, ...data };
                 }
 
-                // Check for successful confirmation
-                const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
-                
-                if (isConfirmed) {
-                    if (data.message === "Charge initialted" || payload.type === 'momo') {
-                        toast.success("Payment initiated. Please confirm on your device.");
-                        // Modal should close or wait for socket
-                        setIsPaymentModalOpen(false);
-                    } else {
-                        toast.success("Payment Successful!");
-                        refetch();
-                        setIsPaying(null);
-                        setIsPaymentModalOpen(false);
-                    }
-                } else {
-                    const errorMsg = data.message || response.message || "Payment Failed!";
-                    toast.error(errorMsg);
+                // Direct success
+                if (data.status === "success" && data.message === "Charge successful") {
+                    toast.success("Payment Successful!");
+                    refetch();
                     setIsPaying(null);
-                    console.warn("[Payment Flow] Payment was not confirmed (Unhandleable state):", data);
+                    setIsPaymentModalOpen(false);
+                    return { success: true };
                 }
+
+                return data;
             } else {
                 toast.error(response.message || "Payment Failed!");
                 setIsPaying(null);
+                return { success: false };
             }
         } catch (error: any) {
-            console.error("Payment Error:", error);
-            toast.error("Payment Failed!");
+            const errorMsg = error.message || "";
+            console.error("Payment Error:", errorMsg);
+
+            // Handle "already paid" gracefully — the payment DID go through
+            if (errorMsg.toLowerCase().includes("already paid")) {
+                toast.success("This booking has already been paid!");
+                refetch();
+                setIsPaying(null);
+                setIsPaymentModalOpen(false);
+                return { success: true };
+            }
+
+            toast.error(errorMsg || "Payment Failed!");
             setIsPaying(null);
+            throw error;
         }
     };
 
     const handleOtpVerify = async (transactionId: string, otp: string) => {
+        setIsPaying(selectedPayment?.id || null);
         try {
             const response = await paymentService.validatePayment(transactionId, otp);
             if (response.success) {
@@ -139,13 +143,16 @@ export default function PaymentsPage() {
                 refetch();
                 setIsPaying(null);
                 setIsPaymentModalOpen(false);
+                return { success: true };
             } else {
                 toast.error(response.message || "Verification Failed");
-                throw new Error(response.message || "Verification Failed");
+                return { success: false };
             }
         } catch (error: any) {
             toast.error(error.message || "Failed to verify payment");
             throw error;
+        } finally {
+            setIsPaying(null);
         }
     };
 
@@ -254,8 +261,8 @@ export default function PaymentsPage() {
                             </div>
                             <h3 className="text-base font-medium text-slate-900 mb-1">No payments found</h3>
                             <p className="text-sm font-medium text-slate-400 max-w-[250px]">
-                                {activeTab === "All" 
-                                    ? "You haven't made any bookings yet. Start exploring creators to book a session!" 
+                                {activeTab === "All"
+                                    ? "You haven't made any bookings yet. Start exploring creators to book a session!"
                                     : `You don't have any ${activeTab.toLowerCase()} payments at the moment.`
                                 }
                             </p>
@@ -325,7 +332,7 @@ export default function PaymentsPage() {
 
                         {/* Action */}
                         {selectedPayment.status === "Pending" ? (
-                            <button 
+                            <button
                                 onClick={() => setIsPaymentModalOpen(true)}
                                 disabled={isPaying === selectedPayment.id}
                                 className="w-full h-14 bg-primary text-white font-medium rounded-[20px] transition-all active:scale-[0.98] mt-auto flex items-center justify-center tracking-widest uppercase text-sm"

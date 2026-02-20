@@ -1,3 +1,6 @@
+import { authStorage } from "@/lib/auth-storage";
+
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 interface CustomRequestInit extends RequestInit {
@@ -48,7 +51,7 @@ export const api = {
         }
 
         let url = `${API_BASE_URL}${endpoint}`;
-        
+
         if (options.params) {
             const queryParams = new URLSearchParams();
             Object.entries(options.params).forEach(([key, value]) => {
@@ -66,7 +69,7 @@ export const api = {
         const bodyLog = options.body instanceof FormData ? "[FormData]" : (options.body ? JSON.parse(options.body as string) : "");
         console.log(`[API Request] ${options.method || 'GET'} ${url}`, bodyLog);
 
-        const accessToken = typeof window !== "undefined" ? localStorage.getItem("pixbay_access_token") : null;
+        const accessToken = authStorage.getAccessToken();
 
         const headers: Record<string, string> = {
             ...options.headers as Record<string, string>,
@@ -87,46 +90,60 @@ export const api = {
             console.log(`[API Response Status] ${response.status} ${response.ok ? 'OK' : 'Error'}`);
 
             if (response.status === 401) {
-                const refreshToken = typeof window !== "undefined" ? localStorage.getItem("pixbay_refresh_token") : null;
+                const refreshToken = authStorage.getRefreshToken();
                 const isLoginPage = typeof window !== "undefined" && window.location.pathname === "/login";
-                
+
                 // If we have a refresh token and we're NOT already trying to refresh/login
                 if (refreshToken && !options._isRetry && !endpoint.includes("/refresh-token") && !isLoginPage) {
-                    console.log("[API 401] Attempting to refresh token...");
-                    
-                    try {
-                        const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ refreshToken })
-                        });
+                    // Prevent concurrent refresh attempts
+                    if ((this as any)._refreshPromise) {
+                        console.log("[API] Waiting for existing refresh attempt...");
+                        await (this as any)._refreshPromise;
+                        return this.request(endpoint, { ...options, _isRetry: true } as any);
+                    }
 
-                        if (refreshResponse.ok) {
-                            const { data } = await refreshResponse.json();
-                            if (data?.accessToken) {
-                                console.log("[API] Token refreshed successfully. Retrying original request...");
-                                localStorage.setItem("pixbay_access_token", data.accessToken);
-                                
-                                // Retry the original request with new token
-                                return this.request(endpoint, { ...options, _isRetry: true } as any);
+                    console.log("[API 401] Attempting to refresh token...");
+
+                    (this as any)._refreshPromise = (async () => {
+                        try {
+                            const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh-token`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ refreshToken })
+                            });
+
+                            if (refreshResponse.ok) {
+                                const { data } = await refreshResponse.json();
+                                if (data?.accessToken) {
+                                    console.log("[API] Token refreshed successfully.");
+                                    authStorage.setTokens(data.accessToken, refreshToken);
+                                    return true;
+                                }
                             }
+                            return false;
+                        } catch (refreshErr) {
+                            console.error("[API] Token refresh failed:", refreshErr);
+                            return false;
+                        } finally {
+                            delete (this as any)._refreshPromise;
                         }
-                    } catch (refreshErr) {
-                        console.error("[API] Token refresh failed:", refreshErr);
+                    })();
+
+                    const success = await (this as any)._refreshPromise;
+                    if (success) {
+                        return this.request(endpoint, { ...options, _isRetry: true } as any);
                     }
                 }
 
-                console.warn("[API 401] Unauthorized. Clearing tokens and redirecting...");
-                
+                console.warn("[API 401] Unauthorized. Session potentially expired.");
+
                 if (typeof window !== "undefined") {
-                    localStorage.removeItem("pixbay_access_token");
-                    localStorage.removeItem("pixbay_refresh_token");
-                    
-                    if (!isLoginPage) {
+                    const isAuthPage = ["/login", "/register", "/verify-otp"].includes(window.location.pathname);
+                    if (!isAuthPage) {
+                        authStorage.clearTokens();
                         window.location.href = "/login?expired=true";
                     }
                 }
-                // throw new Error("Session expired. Please log in again.");
             }
 
             if (!response.ok) {

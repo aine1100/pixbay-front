@@ -12,7 +12,7 @@ import NextImage from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useBookingDetails, useUpdateBookingStatus } from "@/features/bookings/hooks/useBookings";
+import { useBookingDetails, useUpdateBookingStatus, useConfirmDelivery } from "@/features/bookings/hooks/useBookings";
 import { Loading } from "@/components/ui/loading";
 import { toast } from "react-hot-toast";
 import { useSocket } from "@/features/chat/hooks/useSocket";
@@ -28,6 +28,7 @@ export default function BookingDetailsPage() {
 
     const { data: booking, isLoading, error, refetch } = useBookingDetails(id);
     const updateStatusMutation = useUpdateBookingStatus();
+    const confirmDeliveryMutation = useConfirmDelivery();
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [isPaying, setIsPaying] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -39,6 +40,105 @@ export default function BookingDetailsPage() {
         for (let i = 1; i <= 30; i++) days.push(i);
         return days;
     }, []);
+
+    const handlePayment = async () => {
+        setIsPaymentModalOpen(true);
+    };
+
+    // Socket.io listener for real-time payment confirmation
+    useEffect(() => {
+        if (socket) {
+            socket.on("payment_completed", (data: any) => {
+                if (data.bookingId === id && data.status === "FULLY_PAID") {
+                    toast.success("Payment Successful!");
+                    refetch();
+                    setIsPaying(false);
+                    setIsPaymentModalOpen(false);
+                }
+            });
+            return () => { socket.off("payment_completed"); };
+        }
+    }, [socket, id, refetch]);
+
+    const initiatePayment = async (payload: any) => {
+        setIsPaying(true);
+        try {
+            const response = await paymentService.initializePayment(id, payload);
+
+            if (response.success) {
+                const { data } = response;
+
+                // Handle hosted link redirect
+                if (data.paymentLink) {
+                    window.location.href = data.paymentLink;
+                    return { success: true };
+                }
+
+                // Check for authorization requirements (PIN/OTP)
+                const authMode = data.meta?.authorization?.mode;
+                if (authMode === 'pin') {
+                    return { requiresPin: true, ...data };
+                }
+                if (authMode === 'otp' || data.message === "Charge initiated") {
+                    return { requiresOtp: true, flw_ref: data.data?.flw_ref || data.flw_ref, ...data };
+                }
+
+                // Direct success (rare for initial card charge, but possible for some methods)
+                if (data.status === "success" && data.message === "Charge successful") {
+                    toast.success("Payment Successful!");
+                    refetch();
+                    setIsPaying(false);
+                    setIsPaymentModalOpen(false);
+                    return { success: true };
+                }
+
+                return data;
+            } else {
+                toast.error(response.message || "Payment Failed!");
+                setIsPaying(false);
+                return { success: false };
+            }
+        } catch (error: any) {
+            const errorMsg = error.message || "";
+            console.error("Payment Error:", errorMsg);
+
+            // Handle "already paid" gracefully — the payment DID go through
+            if (errorMsg.toLowerCase().includes("already paid")) {
+                toast.success("This booking has already been paid!");
+                refetch();
+                setIsPaying(false);
+                setIsPaymentModalOpen(false);
+                return { success: true };
+            }
+
+            toast.error(errorMsg || "Payment Failed!");
+            setIsPaying(false);
+            throw error;
+        }
+    };
+
+    const handleOtpVerify = async (transId: string, otp: string) => {
+        setIsPaying(true);
+        try {
+            const response = await paymentService.validatePayment(transId, otp);
+            if (response.success) {
+                toast.success("Payment Successful!");
+                refetch();
+                setIsPaying(false);
+                setIsPaymentModalOpen(false);
+                return { success: true };
+            } else {
+                toast.error(response.message || "Verification failed");
+                return { success: false };
+            }
+        } catch (error: any) {
+            console.error("OTP Verification Error:", error);
+            toast.error(error.response?.data?.message || "Verification failed");
+            throw error;
+        } finally {
+            setIsPaying(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -71,65 +171,6 @@ export default function BookingDetailsPage() {
     const heroImage = booking.heroImage || "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1200";
     const bookingDetails = booking.bookingDetails || {};
 
-    const handlePayment = async () => {
-        setIsPaymentModalOpen(true);
-    };
-
-    // Socket.io listener for real-time payment confirmation
-    useEffect(() => {
-        if (socket) {
-            socket.on("payment_completed", (data: any) => {
-                if (data.bookingId === id && data.status === "FULLY_PAID") {
-                    toast.success("Payment Successful!");
-                    refetch();
-                    setIsPaying(false);
-                    setIsPaymentModalOpen(false);
-                }
-            });
-            return () => { socket.off("payment_completed"); };
-        }
-    }, [socket, id, refetch]);
-
-    const initiatePayment = async (payload: any) => {
-        setIsPaying(true);
-        try {
-            const response = await paymentService.initializePayment(id, payload);
-
-            if (response.success) {
-                const { data } = response;
-
-                // If it's a hosted link redirect
-                if (data.paymentLink) {
-                    window.location.href = data.paymentLink;
-                    return;
-                }
-
-                // If it's a direct charge (MoMo / Card)
-                const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
-
-                if (isConfirmed) {
-                    if (payload.type === 'card' && data.status === "success") {
-                        toast.success("Payment Successful!");
-                        refetch();
-                        setIsPaying(false);
-                        setIsPaymentModalOpen(false);
-                    } else if (payload.type === 'momo') {
-                        // Persist loading for MoMo; no "initiated" toast as per user request
-                    }
-                } else {
-                    toast.error("Payment Failed!");
-                    setIsPaying(false);
-                }
-            } else {
-                toast.error("Payment Failed!");
-                setIsPaying(false);
-            }
-        } catch (error: any) {
-            console.error("Payment Error:", error);
-            toast.error("Payment Failed!");
-            setIsPaying(false);
-        }
-    };
 
     return (
         <div className="bg-white min-h-screen pb-20 font-sans animate-in fade-in duration-700">
@@ -300,12 +341,32 @@ export default function BookingDetailsPage() {
                             <div className="space-y-3">
                                 <button
                                     onClick={handlePayment}
-                                    disabled={isPaying || booking.paymentStatus === "FULLY_PAID"}
+                                    disabled={isPaying || booking.paymentStatus === "FULLY_PAID" || booking.paymentStatus === "PAID_IN_ESCROW"}
                                     className="w-full h-14 bg-primary text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                 >
                                     {isPaying ? <Clock className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                                    {booking.paymentStatus === "FULLY_PAID" ? "Paid" : isPaying ? "Processing..." : "Complete Payment"}
+                                    {booking.paymentStatus === "FULLY_PAID" || booking.paymentStatus === "PAID_IN_ESCROW" ? "Paid" : isPaying ? "Processing..." : "Complete Payment"}
                                 </button>
+
+                                {booking.paymentStatus === "PAID_IN_ESCROW" && (booking.status === "IN_PROGRESS" || booking.status === "AWAITING_DELIVERY") && (
+                                    <button
+                                        onClick={async () => {
+                                            if (confirm("Are you sure you want to confirm delivery? This will release funds to the creator and cannot be undone.")) {
+                                                try {
+                                                    await confirmDeliveryMutation.mutateAsync(id);
+                                                    toast.success("Delivery confirmed! Funds released to creator.");
+                                                } catch (err) {
+                                                    toast.error("Failed to confirm delivery.");
+                                                }
+                                            }
+                                        }}
+                                        disabled={confirmDeliveryMutation.isPending}
+                                        className="w-full h-14 bg-green-600 text-white rounded-2xl text-xs font-medium uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 "
+                                    >
+                                        {confirmDeliveryMutation.isPending ? <Clock className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                                        Confirm Delivery
+                                    </button>
+                                )}
 
 
                                 {["CONFIRMED", "COMPLETED"].includes(booking.status) && (
@@ -340,7 +401,7 @@ export default function BookingDetailsPage() {
                                     <div className="p-4 bg-green-50 rounded-2xl border border-green-100 flex items-center gap-3">
                                         <ShieldCheck className="w-5 h-5 text-green-500" />
                                         <p className="text-[11px] font-medium text-green-700 leading-snug">
-                                            Job Protected. The session is currently in progress.
+                                            Job Protected. {booking.paymentStatus === "PAID_IN_ESCROW" ? "Funds are secured in escrow." : "The session is currently in progress."}
                                         </p>
                                     </div>
                                 )}
@@ -396,6 +457,7 @@ export default function BookingDetailsPage() {
                     isOpen={isPaymentModalOpen}
                     onClose={() => setIsPaymentModalOpen(false)}
                     onPaymentInitiate={initiatePayment}
+                    onOtpVerify={handleOtpVerify}
                     bookingDetails={{
                         id: id,
                         amount: pricing.totalAmount || 0,

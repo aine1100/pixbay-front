@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,8 +15,8 @@ import { Loading } from "@/components/ui/loading";
 import { loginSchema, LoginFormData } from "../schemas/login.schema";
 import { authService } from "../services/auth.service";
 import { toast } from "react-hot-toast";
-
 import { useUserStore } from "@/features/user/store/userStore";
+import { authStorage } from "@/lib/auth-storage";
 
 export function LoginForm() {
     const router = useRouter();
@@ -33,6 +33,17 @@ export function LoginForm() {
     });
 
     const setUser = useUserStore((state) => state.setUser);
+
+    // Auto-redirect if already logged in
+   
+
+    useEffect(() => {
+        if (authStorage.isAuthenticated()) {
+            const user = authStorage.getUserFromToken();
+            const role = user?.role || "CLIENT";
+            router.replace(role === "CREATOR" ? "/creator" : "/client");
+        }
+    }, [router]);
 
     const onSubmit = async (data: LoginFormData) => {
         setIsLoading(true);

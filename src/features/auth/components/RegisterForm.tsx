@@ -15,6 +15,7 @@ import { RoleDropdown } from "./RoleDropdown";
 import { registerSchema, RegisterFormData } from "../schemas/register.schema";
 import { authService } from "../services/auth.service";
 import { toast } from "react-hot-toast";
+import { authStorage } from "@/lib/auth-storage";
 
 
 
@@ -25,9 +26,14 @@ export function RegisterForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Auto-redirect if already logged in
     useEffect(() => {
-        console.log("RegisterForm Mounted");
-    }, []);
+        if (authStorage.isAuthenticated()) {
+            const user = authStorage.getUserFromToken();
+            const role = user?.role || "CLIENT";
+            router.replace(role === "CREATOR" ? "/creator" : "/client");
+        }
+    }, [router]);
 
     const {
         register,

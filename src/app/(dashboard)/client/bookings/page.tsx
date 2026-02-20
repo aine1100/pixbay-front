@@ -32,7 +32,7 @@ export default function MyBookingsPage() {
             creator: {
                 name: `${b.creator?.user?.firstName || ''} ${b.creator?.user?.lastName || ''}`,
                 avatar: b.creator?.user?.profilePicture || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150",
-                isVerified: b.creator?.verificationStatus === "APPROVED"
+                isVerified: b.creator?.verificationStatus === "APPROVED" || b.creator?.isVerified
             },
             date: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
             status: b.status.charAt(0) + b.status.slice(1).toLowerCase(),
@@ -95,7 +95,7 @@ export default function MyBookingsPage() {
     };
 
     const initiatePayment = async (payload: any) => {
-        if (!paymentBooking) return;
+        if (!paymentBooking) return { success: false };
 
         setIsPaying(paymentBooking.id);
         try {
@@ -104,38 +104,75 @@ export default function MyBookingsPage() {
             if (response.success) {
                 const { data } = response;
 
-                // If it's a hosted link redirect
+                // Handle hosted link redirect
                 if (data.paymentLink) {
                     window.location.href = data.paymentLink;
-                    return;
+                    return { success: true };
                 }
 
-                // If it's a direct charge (MoMo / Card)
-                const isConfirmed = data.status === "success" && (data.message === "Charge successful" || data.message === "Charge initiated");
+                // Check for authorization requirements (PIN/OTP)
+                const authMode = data.meta?.authorization?.mode;
+                if (authMode === 'pin') {
+                    return { requiresPin: true, ...data };
+                }
+                if (authMode === 'otp' || data.message === "Charge initiated") {
+                    return { requiresOtp: true, flw_ref: data.data?.flw_ref || data.flw_ref, ...data };
+                }
 
-                if (isConfirmed) {
-                    // For Card, if it's already successful, we show success
-                    if (payload.type === 'card' && data.status === "success") {
-                        toast.success("Payment Successful!");
-                        refetch();
-                        setIsPaying(null);
-                        setPaymentBooking(null);
-                    } else if (payload.type === 'momo') {
-                        // For MoMo, we keep loading until the socket event or manual refresh
-                        // No "initiated" toast as per user request
-                    }
-                } else {
-                    
-                    toast.error("Payment Failed!");
+                // Direct success
+                if (data.status === "success" && data.message === "Charge successful") {
+                    toast.success("Payment Successful!");
+                    refetch();
                     setIsPaying(null);
+                    setPaymentBooking(null);
+                    return { success: true };
                 }
+
+                return data;
             } else {
-                toast.error("Payment Failed!");
+                toast.error(response.message || "Payment Failed!");
                 setIsPaying(null);
+                return { success: false };
             }
         } catch (error: any) {
-            console.error("Payment Error:", error);
-            toast.error("Payment Failed!");
+            const errorMsg = error.message || "";
+            console.error("Payment Error:", errorMsg);
+
+            // Handle "already paid" gracefully — the payment DID go through
+            if (errorMsg.toLowerCase().includes("already paid")) {
+                toast.success("This booking has already been paid!");
+                refetch();
+                setIsPaying(null);
+                setPaymentBooking(null);
+                return { success: true };
+            }
+
+            toast.error(errorMsg || "Payment Failed!");
+            setIsPaying(null);
+            throw error;
+        }
+    };
+
+    const handleOtpVerify = async (transId: string, otp: string) => {
+        if (!paymentBooking) return { success: false };
+        setIsPaying(paymentBooking.id);
+        try {
+            const response = await paymentService.validatePayment(transId, otp);
+            if (response.success) {
+                toast.success("Payment Successful!");
+                refetch();
+                setIsPaying(null);
+                setPaymentBooking(null);
+                return { success: true };
+            } else {
+                toast.error(response.message || "Verification failed");
+                return { success: false };
+            }
+        } catch (error: any) {
+            console.error("OTP Verification Error:", error);
+            toast.error(error.response?.data?.message || "Verification failed");
+            throw error;
+        } finally {
             setIsPaying(null);
         }
     };
@@ -281,7 +318,7 @@ export default function MyBookingsPage() {
                                                         Message Creator
                                                     </button>
 
-                                                    {booking.paymentStatus === "PENDING" && booking.rawStatus !== "CANCELLED" && (
+                                                    {booking.paymentStatus === "PENDING" && !["CANCELLED", "COMPLETED"].includes(booking.rawStatus) && (
                                                         <button
                                                             onClick={() => handlePayment(booking)}
                                                             disabled={isPaying === booking.id}
@@ -355,6 +392,7 @@ export default function MyBookingsPage() {
                     isOpen={!!paymentBooking}
                     onClose={() => setPaymentBooking(null)}
                     onPaymentInitiate={initiatePayment}
+                    onOtpVerify={handleOtpVerify}
                     bookingDetails={{
                         id: paymentBooking.id,
                         amount: paymentBooking.price,

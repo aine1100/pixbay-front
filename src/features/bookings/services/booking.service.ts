@@ -46,5 +46,9 @@ export const bookingService = {
         }
 
         return api.post(`/bookings/${id}/delivery`, formData);
+    },
+
+    async confirmDelivery(id: string) {
+        return api.post(`/bookings/${id}/confirm-delivery`, {});
     }
 };

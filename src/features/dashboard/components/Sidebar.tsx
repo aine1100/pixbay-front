@@ -11,6 +11,7 @@ import {
     Settings,
     HelpCircle,
     LogOut,
+    Briefcase,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/features/user/store/userStore";
@@ -28,6 +29,7 @@ const CLIENT_MENU_ITEMS: MenuItem[] = [
     { label: "Home", icon: LayoutDashboard, href: "/client" },
     { label: "Find Creators", icon: Search, href: "/client/find-creators" },
     { label: "Bookings", icon: Calendar, href: "/client/bookings" },
+    { label: "Jobs", icon: Briefcase, href: "/client/jobs" },
     { label: "Messages", icon: MessageSquare, href: "/client/messages" },
     { label: "Payments", icon: Wallet, href: "/client/payments" },
 ];
@@ -36,8 +38,9 @@ const CREATOR_MENU_ITEMS: MenuItem[] = [
     { label: "Home", icon: LayoutDashboard, href: "/creator" },
     { label: "Portfolio", icon: Search, href: "/creator/portfolio" },
     { label: "Bookings", icon: Calendar, href: "/creator/bookings" },
+    { label: "Jobs", icon: Briefcase, href: "/creator/jobs" },
     { label: "Messages", icon: MessageSquare, href: "/creator/messages" },
-    { label: "Payments", icon: Wallet, href: "/creator/payments" },
+    { label: "Wallet", icon: Wallet, href: "/creator/wallet" },
     { label: "Reviews", icon: MessageSquare, href: "/creator/reviews" },
 ];
 

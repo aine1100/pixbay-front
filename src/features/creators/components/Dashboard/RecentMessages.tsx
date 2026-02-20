@@ -78,7 +78,11 @@ export function RecentMessages() {
                                     "text-[13px] font-medium truncate",
                                     chat.unreadCount > 0 ? "text-slate-900" : "text-slate-500"
                                 )}>
-                                    {chat.lastMessage?.content || "No messages yet"}
+                                    {chat.lastMessage ? (
+                                        typeof chat.lastMessage.content === 'string' 
+                                            ? chat.lastMessage.content 
+                                            : (chat.lastMessage.content?.fileName || "Sent an attachment")
+                                    ) : "No messages yet"}
                                 </p>
                             </div>
                         </Link>

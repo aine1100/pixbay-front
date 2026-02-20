@@ -44,3 +44,15 @@ export const useCreateBooking = () => {
         },
     });
 };
+
+export const useConfirmDelivery = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => bookingService.confirmDelivery(id),
+        onSuccess: (_, id) => {
+            queryClient.invalidateQueries({ queryKey: ["bookings"] });
+            queryClient.invalidateQueries({ queryKey: ["booking", id] });
+            queryClient.invalidateQueries({ queryKey: ["wallet"] });
+        },
+    });
+};

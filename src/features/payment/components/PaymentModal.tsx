@@ -19,7 +19,7 @@ interface PaymentModalProps {
     };
 }
 
-type Step = 'selection' | 'details' | 'pin' | 'otp';
+type Step = 'selection' | 'details' | 'pin' | 'otp' | 'success';
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
     isOpen,
@@ -117,7 +117,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             if (step === 'otp') {
                 if (!onOtpVerify || !transactionId) throw new Error("Verification failed. Please retry.");
                 const otp = otpDigits.join("");
-                await onOtpVerify(transactionId, otp);
+                const verifyRes = await onOtpVerify(transactionId, otp);
+                if (verifyRes?.success) {
+                    setStep('success');
+                    setTimeout(() => onClose(), 2000);
+                }
                 return;
             }
 
@@ -126,6 +130,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 : { phoneNumber, network, type: 'momo' };
 
             const result = await onPaymentInitiate(details);
+
+            if (result?.success && !result?.requiresOtp) {
+                setStep('success');
+                setTimeout(() => onClose(), 2000);
+                return;
+            }
 
             // Handle OTP requirement signal from parent
             if (result?.requiresOtp) {
@@ -201,7 +211,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                         </div>
                         <button
                             onClick={onClose}
-                            className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all border border-slate-100"
+                            disabled={step === 'success'}
+                            className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-900 transition-all border border-slate-100 disabled:opacity-30"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -368,10 +379,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                                 </div>
                             </div>
                         )}
+
+                        {step === 'success' && (
+                            <div className="flex flex-col items-center justify-center py-10 space-y-6 animate-in zoom-in-95 duration-500">
+                                <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center border border-green-100">
+                                    <CheckCircle className="w-10 h-10 text-green-500 animate-in fade-in zoom-in duration-700 delay-200" />
+                                </div>
+                                <div className="space-y-2 text-center">
+                                    <h3 className="text-xl font-bold text-slate-900 tracking-tight">Payment Successful</h3>
+                                    <p className="text-sm text-slate-500 font-medium font-sans">
+                                        Your payment has been processed securely.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Action Button */}
-                    {step !== 'selection' && (
+                    {step !== 'selection' && step !== 'success' && (
                         <div className="space-y-4">
                             <Button
                                 onClick={handleProceed}
