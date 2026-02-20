@@ -83,7 +83,7 @@ export default function CreatorProfilePage() {
             return () => { socket.off("payment_completed"); };
         }
     }, [socket, payableBooking, refetchBookings]);
-
+ //initiate payment shi
     const initiatePayment = async (payload: any) => {
         if (!payableBooking) return;
         setIsPaying(true);
