@@ -3,6 +3,7 @@
 import React from "react";
 import { CreditCard, ArrowUpRight, ChevronRight, Clock } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 interface Transaction {
     id: string;
@@ -45,11 +46,11 @@ export function PaymentsMini({ transactions = [], isLoading = false }: PaymentsM
                 </button>
             </div>
 
-            <div className="space-y-4 flex-1">
-                {transactions.slice(0, 4).map((tx) => (
+            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar max-h-[400px]">
+                {transactions.slice(0, 10).map((tx) => (
                     <div
                         key={tx.id}
-                        className="group flex items-center p-4 rounded-2xl border border-slate-50 hover:border-primary/20 hover:bg-slate-50/50 transition-all cursor-pointer"
+                        className="group flex items-center p-4 rounded-2xl border border-slate-50 hover:border-primary/20 hover:bg-slate-50/50 transition-all cursor-pointer mb-4 last:mb-0"
                     >
                         <div className="w-10 h-10 bg-slate-50 group-hover:bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors border border-transparent group-hover:border-slate-100">
                             <CreditCard className="w-5 h-5" />
@@ -73,7 +74,7 @@ export function PaymentsMini({ transactions = [], isLoading = false }: PaymentsM
                 ))}
 
                 {transactions.length === 0 && (
-                    <div className="flex-1 flex flex-col items-center justify-center py-10 text-center space-y-3 opacity-60">
+                    <div className="flex flex-col items-center justify-center py-10 text-center space-y-3 opacity-60">
                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-2">
                              <CreditCard className="w-6 h-6 text-slate-300" />
                         </div>
@@ -85,9 +86,11 @@ export function PaymentsMini({ transactions = [], isLoading = false }: PaymentsM
             </div>
             
             {transactions.length > 0 && (
-                <button className="w-full py-3 text-[11px] font-bold text-slate-400 hover:text-primary transition-colors border-t border-slate-50 uppercase tracking-widest">
-                    View Transaction History
-                </button>
+                <Link href="/creator/wallet">
+                    <button className="w-full py-3 text-[11px] font-bold text-slate-400 hover:text-primary transition-colors border-t border-slate-50 uppercase tracking-widest text-center">
+                        View Transaction History
+                    </button>
+                </Link>
             )}
         </div>
     );

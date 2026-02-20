@@ -2,6 +2,7 @@
 
 import { CreditCard, ArrowUpRight, ChevronRight, Clock } from "lucide-react";
 import { format } from "date-fns";
+import Link from "next/link";
 
 interface Transaction {
     id: string;
@@ -42,9 +43,11 @@ export function RecentPayments({ transactions = [], isLoading = false }: RecentP
                     <h3 className="text-lg font-semibold text-slate-700 tracking-tight">Recent Payments</h3>
                     <p className="text-[11px] text-slate-600 font-medium mt-1 tracking-wider">Your transaction history</p>
                 </div>
-                <button className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
-                    View All <ArrowUpRight className="w-3 h-3" />
-                </button>
+                <Link href="/client/payments">
+                    <button className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                        View All <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                </Link>
             </div>
 
             <div className="space-y-4 flex-1">

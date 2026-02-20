@@ -11,7 +11,6 @@ import { useUserStore } from "@/features/user/store/userStore";
 import { useProfile } from "@/features/user/hooks/useProfile";
 import { useDashboardStats } from "@/features/dashboard/hooks/useDashboardStats";
 import { ChevronDown, MessageSquare } from "lucide-react";
-import { RecentMessages } from "@/features/creators/components/Dashboard/RecentMessages";
 import Link from "next/link";
 
 export default function CreatorDashboardPage() {
@@ -22,6 +21,7 @@ export default function CreatorDashboardPage() {
     const { data: dashboardData, isLoading } = useDashboardStats();
     const stats = dashboardData?.stats || {};
     const transactions = dashboardData?.transactions || [];
+    const bookings = dashboardData?.bookings || [];
     
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -76,7 +76,7 @@ export default function CreatorDashboardPage() {
             {/* Overview Stats */}
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-slate-900">Overview</h2>
+                    <h2 className="text-xl font-semibold text-slate-900 leading-none">Overview</h2>
                     <button className="flex items-center gap-2 px-4 h-10 bg-white border border-slate-100 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-all">
                         Last week
                         <ChevronDown className="w-4 h-4" />
@@ -85,39 +85,39 @@ export default function CreatorDashboardPage() {
                 <CreatorStats stats={stats} isLoading={isLoading} />
             </div>
 
-            {/* Second Row: Reviews & Payments & Messages */}
+            {/* Second Row: Available Jobs & Payments */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <RecentReviews />
-                    <RecentMessages />
+                <div className="lg:col-span-2">
+                    <ProjectRecommendations />
                 </div>
-                <div className="space-y-8">
+                <div>
                     <PaymentsMini transactions={transactions} isLoading={isLoading} />
-                    
-                    {/* Quick Access Card */}
-                    <div className="bg-white p-8 rounded-[40px] border border-slate-100 relative overflow-hidden group">
-                        <div className="relative z-10">
-                            <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mb-6">
-                                <MessageSquare className="w-6 h-6 text-primary" />
-                            </div>
-                            <h4 className="text-xl font-semibold text-slate-900 mb-2">Need Help?</h4>
-                            <p className="text-slate-500 text-sm mb-8 font-medium leading-relaxed">
-                                Our support team is here for you 24/7.
-                            </p>
-                            <Link href="/creator/help">
-                                <button className="w-full h-12 bg-slate-900 text-white rounded-2xl font-semibold text-sm hover:bg-slate-800 transition-all">
-                                    Contact Support
-                                </button>
-                            </Link>
-                        </div>
-                    </div>
                 </div>
             </div>
 
-            {/* Third Row: Recommended Projects & Recent Bookings */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <ProjectRecommendations />
-                <RecentBookings />
+       
+            {/* Fourth Row: Bookings, Reviews & Support */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <RecentBookings bookings={bookings} isLoading={isLoading} />
+                <RecentReviews />
+                
+                {/* Quick Access Card */}
+                <div className="bg-white p-8 rounded-[40px] border border-slate-100 relative overflow-hidden group h-full flex flex-col justify-center">
+                    <div className="relative z-10">
+                        <div className="w-12 h-12 bg-primary/5 rounded-2xl flex items-center justify-center mb-6">
+                            <MessageSquare className="w-6 h-6 text-primary" />
+                        </div>
+                        <h4 className="text-xl font-semibold text-slate-900 mb-2">Need Help?</h4>
+                        <p className="text-slate-500 text-sm mb-8 font-medium leading-relaxed">
+                            Our support team is here for you 24/7.
+                        </p>
+                        <Link href="/creator/help">
+                            <button className="w-full h-12 bg-slate-900 text-white rounded-2xl font-semibold text-sm hover:bg-slate-800 transition-all">
+                                Contact Support
+                            </button>
+                        </Link>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -42,4 +42,13 @@ export const authService = {
     async refreshToken(token: string) {
         return api.post("/auth/refresh-token", { refreshToken: token });
     },
+
+    async googleLogin(idToken: string) {
+        const response = await api.post("/auth/google", { idToken });
+        const authData = response.data || response;
+        if (authData.accessToken && authData.refreshToken) {
+            authStorage.setTokens(authData.accessToken, authData.refreshToken);
+        }
+        return response;
+    },
 };

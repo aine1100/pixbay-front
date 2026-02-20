@@ -45,8 +45,8 @@ export function RecentMessages() {
             ) : (
                 <div className="space-y-4 flex-1">
                     {recentChats.map((chat) => (
-                        <Link 
-                            key={chat.id} 
+                        <Link
+                            key={chat.id}
                             href={`/creator/messages?chatId=${chat.id}`}
                             className="flex items-center gap-4 p-4 rounded-3xl border border-slate-50 hover:bg-slate-50 hover:border-slate-100 transition-all group"
                         >
@@ -79,8 +79,8 @@ export function RecentMessages() {
                                     chat.unreadCount > 0 ? "text-slate-900" : "text-slate-500"
                                 )}>
                                     {chat.lastMessage ? (
-                                        typeof chat.lastMessage.content === 'string' 
-                                            ? chat.lastMessage.content 
+                                        typeof chat.lastMessage.content === 'string'
+                                            ? chat.lastMessage.content
                                             : (chat.lastMessage.content?.fileName || "Sent an attachment")
                                     ) : "No messages yet"}
                                 </p>
@@ -89,16 +89,6 @@ export function RecentMessages() {
                     ))}
                 </div>
             )}
-
-            {/* Quick action card */}
-            <div className="mt-8 p-6 bg-slate-900 rounded-[32px] relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl -mr-16 -mt-16 transition-transform group-hover:scale-110" />
-                <h4 className="text-[14px] font-semibold text-white mb-1">Response Time</h4>
-                <p className="text-[12px] text-white/60 font-medium mb-4">You usually respond in <span className="text-white">less than 2 hours</span></p>
-                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-[85%] rounded-full shadow-[0_0_8px_rgba(234,56,77,0.5)]" />
-                </div>
-            </div>
         </div>
     );
 }

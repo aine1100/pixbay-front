@@ -177,7 +177,6 @@ export default function SettingsPage() {
                                                         setIsUploadingImage(true);
                                                         await userService.uploadProfilePicture(file);
                                                         await updateProfile.mutateAsync({}); // Using this to trigger cache invalidation
-                                                        toast.success("Profile picture updated!");
                                                     } catch (error) {
                                                         toast.error("Failed to upload image");
                                                     } finally {
