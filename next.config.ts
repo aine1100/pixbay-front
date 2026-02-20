@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
@@ -8,8 +9,8 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
       },
       {
-        protocol:"https",
-        hostname:"dushimire.neurolab.cc"
+        protocol: "https",
+        hostname: "dushimire.neurolab.cc"
       },
       {
         protocol: "https",
