@@ -20,7 +20,7 @@ jobs:
             cd ~/pixbay
             
             # Pull latest changes for frontend
-            cd frontend
+            cd pixbay-front
             git pull origin main
             
             # Restart only the frontend container
