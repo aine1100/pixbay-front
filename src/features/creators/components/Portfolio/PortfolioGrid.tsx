@@ -1,6 +1,21 @@
-import React, { useState, useCallback, useEffect } from "react";
-import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, Play, FileText, Link as LinkIcon, Camera } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, FileText, Link as LinkIcon, Camera, Trash2, Loader2, Pencil, Save } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { creatorService } from "../../services/creator.service";
+import { toast } from "react-hot-toast";
+import { useCallback, useEffect, useState } from "react";
+import NextImage from "next/image";
+import { EditWorkModal } from "./EditWorkModal";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 
 interface PortfolioMedia {
     id: string;
@@ -21,8 +36,34 @@ interface GroupedProject {
 }
 
 export function PortfolioGrid({ items }: PortfolioGridProps) {
+    const queryClient = useQueryClient();
     const [selectedProjectIndex, setSelectedProjectIndex] = useState<number | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+    const [itemToEdit, setItemToEdit] = useState<any | null>(null);
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => creatorService.deletePortfolioItem(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["profile"] });
+            toast.success("Work deleted successfully");
+            setItemToDelete(null);
+        },
+        onError: (error: any) => {
+            toast.error(error.message || "Failed to delete work");
+        }
+    });
+
+    const handleDelete = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        setItemToDelete(id);
+    };
+
+    const confirmDelete = () => {
+        if (itemToDelete) {
+            deleteMutation.mutate(itemToDelete);
+        }
+    };
 
     // Grouping logic similar to client-side
     const groupedMedia = Object.values((items || []).filter(m => m.type === 'IMAGE' || m.type === 'VIDEO').reduce((acc: Record<string, GroupedProject>, m: PortfolioMedia) => {
@@ -101,7 +142,7 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                                     className="group relative rounded-[24px] overflow-hidden aspect-[4/3] bg-slate-100 border border-slate-100 transition-all hover:border-primary/20 cursor-pointer"
                                 >
                                     {coverItem.type === "IMAGE" && (
-                                        <Image
+                                        <NextImage
                                             src={coverItem.url}
                                             alt={project.title}
                                             fill
@@ -132,7 +173,25 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                                     ) : null}
 
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <h4 className="text-white font-semibold text-lg truncate">{project.title}</h4>
+                                        <div className="flex items-center justify-between gap-4 mb-1">
+                                            <h4 className="text-white font-semibold text-lg truncate flex-1">{project.title}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setItemToEdit(coverItem); }}
+                                                    className="p-2 bg-white/20 hover:bg-white text-white hover:text-primary rounded-lg backdrop-blur-md transition-all hover:scale-110"
+                                                    title="Edit details"
+                                                >
+                                                    <Pencil className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleDelete(e, coverItem.id)}
+                                                    className="p-2 bg-red-500/20 hover:bg-red-500 text-red-100 rounded-lg backdrop-blur-md transition-all hover:scale-110"
+                                                    title="Delete this project item"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
                                         <p className="text-white/70 text-xs line-clamp-1">{project.description}</p>
                                     </div>
                                 </div>
@@ -167,6 +226,22 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                                             <h4 className="text-sm font-semibold text-slate-900 truncate">{(item.metadata as any)?.title || "Project Link"}</h4>
                                             <p className="text-[11px] text-slate-500 font-medium truncate">{item.url}</p>
                                         </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToEdit(item); }}
+                                                className="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); handleDelete(e, item.id); }}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
                                     </a>
                                 ))}
@@ -197,6 +272,22 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                                             <h4 className="text-sm font-semibold text-slate-900 truncate">{(item.metadata as any)?.originalName || "Portfolio Document"}</h4>
                                             <p className="text-[11px] text-slate-500 font-medium truncate">PDF / DOCX</p>
                                         </div>
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setItemToEdit(item); }}
+                                                className="p-2 text-slate-400 hover:text-primary hover:bg-blue-50 rounded-lg transition-all"
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); handleDelete(e, item.id); }}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                         <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
                                     </a>
                                 ))}
@@ -219,12 +310,34 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                                 Item {currentImageIndex + 1} of {groupedMedia[selectedProjectIndex].items.length}
                             </p>
                         </div>
-                        <button
-                            className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
-                            onClick={(e) => { e.stopPropagation(); setSelectedProjectIndex(null); }}
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                className="p-3 bg-white/10 hover:bg-white text-white hover:text-primary rounded-full transition-all active:scale-95"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setItemToEdit(groupedMedia[selectedProjectIndex].items[currentImageIndex]);
+                                }}
+                                title="Edit details"
+                            >
+                                <Pencil className="w-5 h-5" />
+                            </button>
+                            <button
+                                className="p-3 bg-red-500/20 hover:bg-red-500 rounded-full text-white transition-all active:scale-95"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(e, groupedMedia[selectedProjectIndex].items[currentImageIndex].id);
+                                }}
+                                title="Delete this item"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                            <button
+                                className="p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all active:scale-95"
+                                onClick={(e) => { e.stopPropagation(); setSelectedProjectIndex(null); }}
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="relative w-full h-[70vh] flex items-center justify-center gap-8 px-4" onClick={(e) => e.stopPropagation()}>
@@ -247,7 +360,7 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
 
                         <div className="relative w-full max-w-5xl h-full rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-500">
                             {groupedMedia[selectedProjectIndex].items[currentImageIndex].type === "IMAGE" ? (
-                                <Image
+                                <NextImage
                                     src={groupedMedia[selectedProjectIndex].items[currentImageIndex].url}
                                     alt="Portfolio item"
                                     fill
@@ -290,6 +403,38 @@ export function PortfolioGrid({ items }: PortfolioGridProps) {
                     </div>
                 </div>
             ) : null}
+
+            {/* Delete Confirmation */}
+            <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+                <AlertDialogContent className="rounded-[32px] border-slate-100 bg-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold text-slate-900">Remove from Portfolio?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-500 font-medium">
+                            This action cannot be undone. This work sample will be permanently removed from your profile.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2 pt-4">
+                        <AlertDialogCancel className="rounded-xl border-slate-100 font-semibold h-11 px-6 hover:bg-slate-50">
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            disabled={deleteMutation.isPending}
+                            className="rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold h-11 px-6 flex items-center gap-2"
+                        >
+                            {deleteMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                            Delete Permanently
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Edit Modal */}
+            <EditWorkModal
+                isOpen={!!itemToEdit}
+                onClose={() => setItemToEdit(null)}
+                item={itemToEdit}
+            />
         </div>
     );
 }

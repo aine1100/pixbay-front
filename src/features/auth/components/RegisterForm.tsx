@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import Link from "next/link";
 import { Loading } from "@/components/ui/loading";
-// import { signInWithPopup } from "firebase/auth";
-// import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 import { useUserStore } from "@/features/user/store/userStore";
 import { RoleDropdown } from "./RoleDropdown";
 import { registerSchema, RegisterFormData } from "../schemas/register.schema";
@@ -262,45 +262,45 @@ export function RegisterForm() {
                     type="button"
                     variant="outline"
                     disabled={isLoading}
-                    // onClick={async () => {
-                    //     setIsLoading(true);
-                    //     try {
-                    //         const result = await signInWithPopup(auth, googleProvider);
-                    //         const idToken = await result.user.getIdToken();
+                    onClick={async () => {
+                        setIsLoading(true);
+                        try {
+                            const result = await signInWithPopup(auth, googleProvider);
+                            const idToken = await result.user.getIdToken();
                             
-                    //         const response = await authService.googleLogin(idToken);
-                    //         const authData = response.data || response;
+                            const response = await authService.googleLogin(idToken);
+                            const authData = response.data || response;
                             
-                    //         if (authData.user) {
-                    //             setUser(authData.user);
-                    //         }
+                            if (authData.user) {
+                                setUser(authData.user);
+                            }
                             
-                    //         const role = authData.user?.role || authData.role;
-                    //         if (role === "CLIENT") {
-                    //             toast.success("Login Successful");
-                    //             router.push("/client");
-                    //         } else if (role === "CREATOR") {
-                    //             const profile = authData.user?.creatorProfile;
-                    //             const isComplete = profile?.verificationStatus === "APPROVED";
+                            const role = authData.user?.role || authData.role;
+                            if (role === "CLIENT") {
+                                toast.success("Login Successful");
+                                router.push("/client");
+                            } else if (role === "CREATOR") {
+                                const profile = authData.user?.creatorProfile;
+                                const isComplete = profile?.verificationStatus === "APPROVED";
                                 
-                    //             if (!isComplete) {
-                    //                 toast.success("Welcome, Creator! Let's finish your profile.");
-                    //                 router.push("/creator-onboarding");
-                    //             } else {
-                    //                 toast.success("Welcome back!");
-                    //                 router.push("/creator");
-                    //             }
-                    //         } else {
-                    //             router.push("/client");
-                    //         }
-                    //     } catch (err) {
-                    //         console.error("Google Auth Error:", err);
-                    //         const message = err instanceof Error ? err.message : "Google login failed";
-                    //         toast.error(message);
-                    //     } finally {
-                    //         setIsLoading(false);
-                    //     }
-                    // }}
+                                if (!isComplete) {
+                                    toast.success("Welcome, Creator! Let's finish your profile.");
+                                    router.push("/creator-onboarding");
+                                } else {
+                                    toast.success("Welcome back!");
+                                    router.push("/creator");
+                                }
+                            } else {
+                                router.push("/client");
+                            }
+                        } catch (err) {
+                            console.error("Google Auth Error:", err);
+                            const message = err instanceof Error ? err.message : "Google login failed";
+                            toast.error(message);
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }}
                     className="h-11 w-full rounded-xl border-border bg-slate-50/30 text-slate-600 font-medium hover:bg-slate-50 transition-all flex items-center justify-center gap-3 text-sm"
                 >
                     <Image src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" width={18} height={18} />

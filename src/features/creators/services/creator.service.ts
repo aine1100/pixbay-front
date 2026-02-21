@@ -57,5 +57,13 @@ export const creatorService = {
 
     async updateProfile(data: any) {
         return api.patch("/creators/profile", data);
+    },
+
+    async deletePortfolioItem(id: string) {
+        return api.delete(`/creators/portfolio/${id}`);
+    },
+
+    async updatePortfolioItem(id: string, data: any) {
+        return api.patch(`/creators/portfolio/${id}`, data);
     }
 };

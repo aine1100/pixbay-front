@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Upload, X, Image as ImageIcon, Video, Link as LinkIcon, FileText, Globe, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { creatorService } from "../../services/creator.service";
 import { toast } from "react-hot-toast";
@@ -119,15 +121,12 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div
-                className="bg-white rounded-[24px] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
-            >
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="max-w-2xl p-0 border-none">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <DialogHeader className="px-6 py-4 border-b border-slate-100 flex flex-row items-center justify-between">
                     <div>
-                        <h2 className="text-lg font-semibold text-slate-900">Add New Project</h2>
+                        <DialogTitle className="text-lg font-semibold text-slate-900">Add New Project</DialogTitle>
                         <p className="text-sm text-slate-500">Group multiple images/videos into a single professional work</p>
                     </div>
                     <button
@@ -136,7 +135,7 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
                     >
                         <X className="w-5 h-5" />
                     </button>
-                </div>
+                </DialogHeader>
 
                 {/* Body */}
                 <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
@@ -153,11 +152,11 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Explanation / Description</label>
-                            <textarea
+                            <Textarea
                                 placeholder="Describe the project goals, your role, or any interesting details..."
                                 value={explanation}
                                 onChange={(e) => setExplanation(e.target.value)}
-                                className="w-full min-h-[100px] p-4 bg-slate-50 border-transparent hover:bg-slate-100 focus:bg-white transition-all rounded-xl text-sm outline-none focus:ring-1 focus:ring-primary/20"
+                                className="w-full min-h-[100px] bg-slate-50 border-transparent hover:bg-slate-100 focus:bg-white transition-all rounded-xl text-sm"
                             />
                         </div>
                     </div>
@@ -291,7 +290,7 @@ export function AddWorkModal({ isOpen, onClose }: AddWorkModalProps) {
                         )}
                     </Button>
                 </div>
-            </div>
-        </div>
+            </DialogContent>
+        </Dialog>
     );
 }

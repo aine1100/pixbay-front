@@ -22,17 +22,17 @@ export default function CreatorDashboardPage() {
     const stats = dashboardData?.stats || {};
     const transactions = dashboardData?.transactions || [];
     const bookings = dashboardData?.bookings || [];
-    
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
             {/* Dynamic Status Banners */}
             {(() => {
                 const creator = user?.creatorProfile;
                 const status = creator?.verificationStatus;
-                const isVerified = creator?.isVerified || user?.isVerified || status === "APPROVED";
+                const isApproved = creator?.verificationStatus === "APPROVED";
 
                 // Priority 1: Verified
-                if (isVerified) {
+                if (isApproved) {
                     return (
                         <div className="bg-[#FFF8E1] border border-[#FFE082] rounded-xl p-4 flex items-center justify-center gap-3 animate-in fade-in duration-500">
                             <span className="text-[14px] text-[#A27300] font-medium flex items-center gap-2">
@@ -95,12 +95,12 @@ export default function CreatorDashboardPage() {
                 </div>
             </div>
 
-       
+
             {/* Fourth Row: Bookings, Reviews & Support */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <RecentBookings bookings={bookings} isLoading={isLoading} />
                 <RecentReviews />
-                
+
                 {/* Quick Access Card */}
                 <div className="bg-white p-8 rounded-[40px] border border-slate-100 relative overflow-hidden group h-full flex flex-col justify-center">
                     <div className="relative z-10">
