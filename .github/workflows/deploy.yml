@@ -18,6 +18,7 @@ jobs:
           script: |
             # Navigate to the project directory
             cd ~/pixbay
+            docker system prune -af
             
             # Pull latest changes for frontend
             cd pixbay-front
